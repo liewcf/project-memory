@@ -1,0 +1,15 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Local Codex project memory; keep private for public repos.
+AGENTS.md
+PROJECT_CONTEXT.md
+DECISIONS.md
+TASKS.md
+CHANGELOG_WORK.md

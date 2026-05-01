@@ -1,0 +1,118 @@
+---
+name: project-memory
+description: Use when initializing, updating, reviewing, repairing, compacting, or summarizing repo-level project memory files for Codex across software projects.
+---
+
+# Project Memory
+
+Use this skill to set up and maintain concise repo-level memory for Codex sessions. It is generic for software projects and repositories; do not assume WordPress or any specific framework unless the project evidence supports it.
+
+## Memory Files
+
+Maintain these files in the project root:
+
+- `AGENTS.md`: short practical instructions for future agents.
+- `PROJECT_CONTEXT.md`: stable facts about the project, architecture, workflows, and constraints.
+- `DECISIONS.md`: dated append-only technical or product decisions.
+- `TASKS.md`: current tasks, blockers, and next actions.
+- `CHANGELOG_WORK.md`: dated append-only work log for files, behavior, docs, config, dependencies, and tooling changes.
+
+Never store secrets, passwords, API keys, private tokens, credentials, database dumps, or sensitive personal data in project memory.
+
+## Mode Selection
+
+Infer the mode from the user request when possible. Explicit commands such as `$project-memory setup`, `$project-memory update`, `$project-memory review`, `$project-memory status`, `$project-memory repair`, and `$project-memory compact` map directly to the matching mode.
+
+If the mode is unclear:
+
+- Use `status` for "what is going on?", "summarize this project", or "catch me up".
+- Use `update` after meaningful work or wrap-up requests.
+- Use `review` for audits, quality checks, or "is this memory good?".
+- Use `setup` for initialization or missing memory files.
+- Use `repair` for broken structure or content in the wrong file.
+- Use `compact` for long, noisy, stale, or hard-to-scan memory files.
+
+## Setup
+
+For `$project-memory setup`, run the bundled script from the repo root:
+
+```bash
+python3 ~/.agents/skills/project-memory/scripts/setup_project_memory.py
+```
+
+The script creates missing memory files, preserves existing files, and adds an `AGENTS.md` project memory requirement only when similar guidance is absent.
+
+After running setup, inspect the output and mention which files were created, updated, already existed, or were unchanged.
+
+## Update
+
+Use `update` after meaningful work. Read the relevant project files and current memory before editing.
+
+Update only what changed:
+
+- `TASKS.md`: task status, blockers, next actions, owners, or follow-up state.
+- `CHANGELOG_WORK.md`: dated entries for changed files, behavior, config, dependencies, documentation, tooling, tests, or verification.
+- `DECISIONS.md`: important technical or product decisions, including rationale and date.
+- `PROJECT_CONTEXT.md`: stable project facts that changed or were newly discovered.
+- `AGENTS.md`: only when explicitly asked or when a recurring rule should become permanent.
+
+Prefer concise dated append-only entries for `DECISIONS.md` and `CHANGELOG_WORK.md`. Keep claims factual and evidence-based.
+
+## Review
+
+Use `review` to inspect the five memory files without rewriting them by default. Report:
+
+- Missing files.
+- Stale sections.
+- Duplicated content.
+- Overly long content.
+- Vague or unhelpful notes.
+- Suggested cleanup.
+
+Do not rewrite everything unless the user asks for edits.
+
+## Status
+
+Use `status` to read the memory files and summarize:
+
+- What the project is.
+- Current tasks.
+- Recent work.
+- Important decisions.
+- Blockers or risks.
+- Recommended next action.
+
+Be clear when a fact is absent, stale, or inferred from limited memory.
+
+## Repair
+
+Use `repair` to fix structural problems while preserving history:
+
+- Normalize headings.
+- Move content to the correct file.
+- Remove duplicate sections.
+- Preserve historical notes.
+- Keep `AGENTS.md` short and practical.
+
+Do not silently delete historical context. If content is obsolete but potentially useful, move it to an archive section or mark it as historical.
+
+## Compact
+
+Use `compact` when memory files are noisy or too long:
+
+- Keep important current facts.
+- Preserve major decisions.
+- Preserve recent changelog entries.
+- Archive excessive old detail into an archive section.
+- Keep `TASKS.md` easy to scan.
+
+Prefer reducing repetition over removing information. Keep enough context for a future Codex session to continue safely.
+
+## Editing Rules
+
+- Preserve existing useful content.
+- Do not overwrite user-authored project memory wholesale.
+- Use dated entries where history matters.
+- Keep updates concise and factual.
+- Separate confirmed facts from assumptions.
+- Avoid project-specific framework claims unless verified from repo evidence.

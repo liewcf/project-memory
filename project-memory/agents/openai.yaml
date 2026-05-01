@@ -1,0 +1,7 @@
+interface:
+  display_name: "Project Memory"
+  short_description: "Set up and maintain repo memory files for Codex."
+  default_prompt: "Use $project-memory setup to initialize repo-level project memory files."
+
+policy:
+  allow_implicit_invocation: true
