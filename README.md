@@ -43,6 +43,14 @@ Other supported modes:
 - `$project-memory repair`: normalize broken or duplicated memory structure.
 - `$project-memory compact`: shorten noisy or stale memory while preserving useful history.
 
+## Example Workflow
+
+1. Install the skill.
+2. Run `$project-memory setup` in the project root.
+3. Do coding work.
+4. Run `$project-memory update`.
+5. Future agents read the memory files before continuing work.
+
 ## Manual Setup Script
 
 After installing the skill, you can run the bundled setup script directly:
@@ -66,19 +74,6 @@ Check the setup script parses:
 ```bash
 python3 -m py_compile project-memory/scripts/setup_project_memory.py
 ```
-
-Run an idempotency smoke test:
-
-```bash
-tmpdir="$(mktemp -d)"
-(
-  cd "$tmpdir"
-  python3 /path/to/liewcf-project-memory/project-memory/scripts/setup_project_memory.py
-  python3 /path/to/liewcf-project-memory/project-memory/scripts/setup_project_memory.py
-)
-```
-
-The first run should create the memory files. The second run should not duplicate the `AGENTS.md` project memory requirement.
 
 ## Repository Layout
 
