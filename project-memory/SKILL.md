@@ -58,6 +58,26 @@ Update only what changed:
 
 Prefer concise dated append-only entries for `DECISIONS.md` and `CHANGELOG_WORK.md`. Keep claims factual and evidence-based.
 
+## Compaction Check
+
+After `update`, `review`, or `repair`, briefly assess whether the memory files are becoming noisy, stale, repetitive, or hard to scan.
+
+Do not automatically run `compact` as a hidden follow-up. If compaction looks useful:
+
+- Mention that compaction is recommended.
+- Explain the reason in one sentence.
+- Ask before compacting unless the user explicitly requested automatic cleanup or `$project-memory compact`.
+
+Recommend compacting when:
+
+- `TASKS.md` mixes many completed or stale items with current work.
+- `CHANGELOG_WORK.md` has excessive old detail that obscures recent entries.
+- `PROJECT_CONTEXT.md` repeats facts or carries outdated context beside current facts.
+- `DECISIONS.md` includes duplicated rationale or exploratory notes that should be summarized.
+- A future Codex session would need to read too much to continue safely.
+
+When the user asks for `$project-memory compact`, perform the compaction directly.
+
 ## Review
 
 Use `review` to inspect the five memory files without rewriting them by default. Report:
