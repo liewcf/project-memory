@@ -9,12 +9,14 @@ The skill gives future coding agents a stable place to find project context, dec
 Running setup in a project root creates or updates these files:
 
 - `AGENTS.md`: practical instructions for future agents.
-- `PROJECT_CONTEXT.md`: stable project facts, architecture, workflows, and constraints.
-- `DECISIONS.md`: dated technical or product decisions and rationale.
-- `TASKS.md`: current tasks, blockers, and next actions.
-- `CHANGELOG_WORK.md`: dated work log for changed files, behavior, docs, config, dependencies, tooling, tests, and verification.
+- `docs/PROJECT_CONTEXT.md`: stable project facts, architecture, workflows, and constraints.
+- `docs/DECISIONS.md`: dated technical or product decisions and rationale.
+- `docs/TASKS.md`: current tasks, blockers, and next actions.
+- `docs/CHANGELOG_WORK.md`: dated work log for changed files, behavior, docs, config, dependencies, tooling, tests, and verification.
 
-Existing files are preserved. The setup script only appends the project memory requirement to `AGENTS.md` when similar guidance is missing.
+Existing files are preserved. The setup script adds or refreshes the project memory requirement in `AGENTS.md` when needed.
+
+Setup initializes the memory structure only; it does not populate project-specific facts from repo evidence. In an existing project, run `$project-memory update` after setup to fill in concise facts, tasks, decisions, and recent work.
 
 ## Install
 
@@ -47,9 +49,10 @@ Other supported modes:
 
 1. Install the skill.
 2. Run `$project-memory setup` in the project root.
-3. Do coding work.
-4. Run `$project-memory update`.
-5. Future agents read the memory files before continuing work.
+3. If this is an existing project, run `$project-memory update` to populate memory from current repo evidence.
+4. Do coding work.
+5. Run `$project-memory update` after meaningful changes.
+6. Future agents read the memory files before continuing work.
 
 ## Manual Setup Script
 
@@ -87,7 +90,7 @@ tests/
 .github/workflows/ci.yml
 ```
 
-The root-level `PROJECT_CONTEXT.md`, `DECISIONS.md`, `TASKS.md`, and `CHANGELOG_WORK.md` files describe development history for this source package.
+The root-level `AGENTS.md` is the only root project memory file. `docs/PROJECT_CONTEXT.md`, `docs/DECISIONS.md`, `docs/TASKS.md`, and `docs/CHANGELOG_WORK.md` describe development history for this source package.
 
 ## Safety
 

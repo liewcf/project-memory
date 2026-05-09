@@ -8,8 +8,14 @@ __pycache__/
 venv/
 
 # Local Codex project memory; keep private for public repos.
-AGENTS.md
-PROJECT_CONTEXT.md
-DECISIONS.md
-TASKS.md
-CHANGELOG_WORK.md
+/AGENTS.md
+/docs/PROJECT_CONTEXT.md
+/docs/DECISIONS.md
+/docs/TASKS.md
+/docs/CHANGELOG_WORK.md
+
+# Transitional legacy root paths; keep ignored during docs/ migration.
+/PROJECT_CONTEXT.md
+/DECISIONS.md
+/TASKS.md
+/CHANGELOG_WORK.md
