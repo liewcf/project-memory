@@ -19,6 +19,20 @@ Maintain these files in the project root:
 
 Never store secrets, passwords, API keys, private tokens, credentials, database dumps, or sensitive personal data in project memory.
 
+## Memory Quality Bar
+
+Project memory is guidance, not the source of truth. Keep only facts that are stable, meaningful, and likely to affect future implementation decisions.
+
+Do not record temporary task progress, obvious implementation details, one-off debugging notes, routine changes, raw command output, secrets, credentials, or private user data.
+
+When memory conflicts with a higher-authority source, follow the higher-authority source and update memory if the correction is durable. Authority order:
+
+1. Current user instruction.
+2. Current spec or task requirements.
+3. Existing code and tests.
+4. Project memory.
+5. General best practices.
+
 ## Mode Selection
 
 Infer the mode from the user request when possible. Explicit commands such as `$project-memory setup`, `$project-memory update`, `$project-memory review`, `$project-memory status`, `$project-memory repair`, and `$project-memory compact` map directly to the matching mode.
@@ -59,6 +73,8 @@ Update only what changed:
 - `docs/DECISIONS.md`: important technical or product decisions, including rationale and date.
 - `docs/PROJECT_CONTEXT.md`: stable project facts that changed or were newly discovered.
 - `AGENTS.md`: only when explicitly asked or when a recurring rule should become permanent.
+
+Update memory when a durable convention, design decision, product rule, architecture constraint, spec deviation, validation requirement, or open question is discovered. Avoid turning `docs/TASKS.md` or `docs/CHANGELOG_WORK.md` into a running transcript.
 
 Prefer concise dated append-only entries for `docs/DECISIONS.md` and `docs/CHANGELOG_WORK.md`. Keep claims factual and evidence-based.
 
@@ -136,7 +152,9 @@ Prefer reducing repetition over removing information. Keep enough context for a 
 
 - Preserve existing useful content.
 - Do not overwrite user-authored project memory wholesale.
+- Revise existing entries instead of adding duplicate facts.
 - Use dated entries where history matters.
 - Keep updates concise and factual.
 - Separate confirmed facts from assumptions.
+- Label inferred facts with source or confidence when useful.
 - Avoid project-specific framework claims unless verified from repo evidence.

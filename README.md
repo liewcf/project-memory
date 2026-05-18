@@ -54,6 +54,14 @@ Other supported modes:
 5. Run `$project-memory update` after meaningful changes.
 6. Future agents read the memory files before continuing work.
 
+## Memory Quality
+
+Project memory is guidance, not the source of truth. Keep only stable, meaningful facts that are likely to affect future implementation decisions.
+
+Good memory entries include durable conventions, design decisions, product or domain rules, architecture constraints, accepted spec deviations, open questions, and validation requirements.
+
+Avoid recording temporary task progress, obvious implementation details, one-off debugging notes, routine changes, raw command output, secrets, credentials, or private user data. When memory conflicts with the current user instruction, current spec, or current code and tests, follow the current higher-authority source and update memory only if the correction is durable.
+
 ## Manual Setup Script
 
 After installing the skill, you can run the bundled setup script directly:
