@@ -51,6 +51,18 @@ class SetupProjectMemoryTests(unittest.TestCase):
                 self.assertTrue(path.exists(), f"docs/{filename} should be created")
                 self.assertTrue(path.read_text(encoding="utf-8").strip())
 
+    def test_tasks_template_includes_next_action_and_verification(self) -> None:
+        self.assertEqual(self.run_setup(), 0)
+
+        tasks = (Path("docs") / "TASKS.md").read_text(encoding="utf-8")
+        self.assertIn("## Recommended Next Action", tasks)
+        self.assertIn(
+            "- Confirm project purpose, build/test commands, and active priorities.",
+            tasks,
+        )
+        self.assertIn("## Verification", tasks)
+        self.assertIn("- Not yet verified against repo evidence.", tasks)
+
     def test_second_run_does_not_duplicate_agents_requirement(self) -> None:
         self.assertEqual(self.run_setup(), 0)
         self.assertEqual(self.run_setup(), 0)

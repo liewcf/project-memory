@@ -89,9 +89,17 @@ def template_for(filename: str) -> str:
 """,
         "TASKS.md": """# Tasks
 
+## Recommended Next Action
+
+- Confirm project purpose, build/test commands, and active priorities.
+
 ## Current
 
 - [ ] Confirm project purpose, build/test commands, and active priorities.
+
+## Verification
+
+- Not yet verified against repo evidence.
 
 ## Blockers
 

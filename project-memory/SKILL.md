@@ -66,6 +66,10 @@ After running setup, inspect the output and mention which files were created, up
 
 Use `update` after meaningful work. Read the relevant project files and current memory before editing.
 
+When updating `docs/TASKS.md`, keep one short `Recommended Next Action` when evidence supports it. Mark whether active work has been verified, is unverified, or needs a specific check. Remove stale next actions after the work lands.
+
+For existing projects with sparse memory or `Unknown` placeholders, inspect the strongest local evidence before writing durable facts: `AGENTS.md`, README or docs, package/build configuration, test files, source layout, recent git history, and changelog-style notes when available. Use only evidence that exists; do not create roadmaps, phases, branches, PRs, or workflow state unless the user asks.
+
 Update only what changed:
 
 - `docs/TASKS.md`: task status, blockers, next actions, owners, or follow-up state.
@@ -120,7 +124,7 @@ Use `status` to read the memory files and summarize:
 - Recent work.
 - Important decisions.
 - Blockers or risks.
-- Recommended next action.
+- Recommended next action, including whether it is confirmed by memory or inferred from limited evidence.
 
 Be clear when a fact is absent, stale, or inferred from limited memory.
 

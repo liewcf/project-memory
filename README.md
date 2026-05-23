@@ -62,6 +62,12 @@ Good memory entries include durable conventions, design decisions, product or do
 
 Avoid recording temporary task progress, obvious implementation details, one-off debugging notes, routine changes, raw command output, secrets, credentials, or private user data. When memory conflicts with the current user instruction, current spec, or current code and tests, follow the current higher-authority source and update memory only if the correction is durable.
 
+## Lightweight Continuity
+
+Good project memory should leave future agents with one clear next action, the current verification state, and facts backed by local evidence.
+
+This skill intentionally does not add phases, roadmaps, subagents, workflow configuration, branch automation, or PR automation. Use it as repo memory, not as a project management system.
+
 ## Manual Setup Script
 
 After installing the skill, you can run the bundled setup script directly:
@@ -95,7 +101,6 @@ project-memory/
   scripts/setup_project_memory.py
 tests/
   test_setup_project_memory.py
-.github/workflows/ci.yml
 ```
 
 The root-level `AGENTS.md` is the only root project memory file. `docs/PROJECT_CONTEXT.md`, `docs/DECISIONS.md`, `docs/TASKS.md`, and `docs/CHANGELOG_WORK.md` describe development history for this source package.
