@@ -6,6 +6,8 @@
 
 **Architecture:** Keep the existing files, modes, and setup script. Add one small generated `docs/TASKS.md` template improvement, a short `SKILL.md` evidence checklist for existing-project updates, and a matching public README note. Do not add `.planning/`, phases, subagents, runtime config, branch automation, or PR workflow ownership.
 
+**Status:** Original lightweight continuity scope was implemented in `293ef5a` and later hardened on the `codex/lightweight-gsd-project-memory` branch. This file is now a historical implementation plan, not an active task list.
+
 **Tech Stack:** Markdown skill docs, Python standard library setup script, Python `unittest` regression tests, shell validation commands.
 
 ---
@@ -38,7 +40,7 @@ Do not add new memory files, new commands, JSON config, a phase lifecycle, insta
 - Modify: `tests/test_setup_project_memory.py`
 - Modify: `project-memory/scripts/setup_project_memory.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add this test after `test_creates_docs_directory_and_memory_files` in `tests/test_setup_project_memory.py`:
 
@@ -56,7 +58,7 @@ Add this test after `test_creates_docs_directory_and_memory_files` in `tests/tes
         self.assertIn("- Not yet verified against repo evidence.", tasks)
 ```
 
-- [ ] **Step 2: Run the focused test to verify it fails**
+- [x] **Step 2: Run the focused test to verify it fails**
 
 Run:
 
@@ -66,7 +68,7 @@ python3 -m unittest tests.test_setup_project_memory.SetupProjectMemoryTests.test
 
 Expected: `FAIL` with an assertion that `## Recommended Next Action` is not found.
 
-- [ ] **Step 3: Update the generated `TASKS.md` template**
+- [x] **Step 3: Update the generated `TASKS.md` template**
 
 In `project-memory/scripts/setup_project_memory.py`, replace the `TASKS.md` entry inside `template_for()` with:
 
@@ -95,7 +97,7 @@ In `project-memory/scripts/setup_project_memory.py`, replace the `TASKS.md` entr
 """,
 ```
 
-- [ ] **Step 4: Run the focused test to verify it passes**
+- [x] **Step 4: Run the focused test to verify it passes**
 
 Run:
 
@@ -105,7 +107,7 @@ python3 -m unittest tests.test_setup_project_memory.SetupProjectMemoryTests.test
 
 Expected: `OK`.
 
-- [ ] **Step 5: Run the full setup test suite**
+- [x] **Step 5: Run the full setup test suite**
 
 Run:
 
@@ -122,7 +124,7 @@ Expected: all tests pass.
 **Files:**
 - Modify: `project-memory/SKILL.md`
 
-- [ ] **Step 1: Add next-action and existing-project guidance**
+- [x] **Step 1: Add next-action and existing-project guidance**
 
 In `project-memory/SKILL.md`, under `## Update`, after the sentence `Use update after meaningful work. Read the relevant project files and current memory before editing.`, add:
 
@@ -132,7 +134,7 @@ When updating `docs/TASKS.md`, keep one short `Recommended Next Action` when evi
 For existing projects with sparse memory or `Unknown` placeholders, inspect the strongest local evidence before writing durable facts: `AGENTS.md`, README or docs, package/build configuration, test files, source layout, recent git history, and changelog-style notes when available. Use only evidence that exists; do not create roadmaps, phases, branches, PRs, or workflow state unless the user asks.
 ```
 
-- [ ] **Step 2: Clarify status output**
+- [x] **Step 2: Clarify status output**
 
 In the `## Status` section, replace:
 
@@ -146,7 +148,7 @@ with:
 - Recommended next action, including whether it is confirmed by memory or inferred from limited evidence.
 ```
 
-- [ ] **Step 3: Check the skill text**
+- [x] **Step 3: Check the skill text**
 
 Run:
 
@@ -163,7 +165,7 @@ Expected: matches for the new update and status guidance.
 **Files:**
 - Modify: `README.md`
 
-- [ ] **Step 1: Add the public-facing note**
+- [x] **Step 1: Add the public-facing note**
 
 In `README.md`, after the `## Memory Quality` section, add:
 
@@ -175,7 +177,7 @@ Good project memory should leave future agents with one clear next action, the c
 This skill intentionally does not add phases, roadmaps, subagents, workflow configuration, branch automation, or PR automation. Use it as repo memory, not as a project management system.
 ```
 
-- [ ] **Step 2: Check the README text**
+- [x] **Step 2: Check the README text**
 
 Run:
 
@@ -194,7 +196,7 @@ Expected: matches for the new README section.
 - Source: `project-memory/scripts/setup_project_memory.py`
 - Installed copy: `/Users/cheonfongliew/.agents/skills/project-memory/`
 
-- [ ] **Step 1: Run regression tests**
+- [x] **Step 1: Run regression tests**
 
 Run:
 
@@ -204,7 +206,7 @@ python3 -m unittest discover -s tests -p "test_*.py"
 
 Expected: all tests pass.
 
-- [ ] **Step 2: Check setup script syntax without local cache writes**
+- [x] **Step 2: Check setup script syntax without local cache writes**
 
 Run:
 
@@ -214,7 +216,7 @@ PYTHONPYCACHEPREFIX=/tmp/project-memory-pycache python3 -m py_compile project-me
 
 Expected: command exits successfully with no syntax errors.
 
-- [ ] **Step 3: Sync the verified source skill to the installed profile skill**
+- [x] **Step 3: Sync the verified source skill to the installed profile skill**
 
 Run:
 
@@ -224,7 +226,7 @@ rsync -a --delete --exclude '__pycache__' project-memory/ /Users/cheonfongliew/.
 
 Expected: command exits successfully.
 
-- [ ] **Step 4: Verify the installed copy matches source**
+- [x] **Step 4: Verify the installed copy matches source**
 
 Run:
 
@@ -243,7 +245,7 @@ Expected: no output.
 - Modify: `docs/TASKS.md`
 - Modify: `docs/CHANGELOG_WORK.md`
 
-- [ ] **Step 1: Record the product boundary decision**
+- [x] **Step 1: Record the product boundary decision**
 
 Add this dated entry to `docs/DECISIONS.md`:
 
@@ -253,7 +255,7 @@ Add this dated entry to `docs/DECISIONS.md`:
 - Keep GSD-inspired improvements lightweight: add next-action, verification, and existing-project evidence guidance without adding `.planning/`, phases, subagents, runtime config, branch automation, or PR workflow ownership.
 ```
 
-- [ ] **Step 2: Refresh current task state**
+- [x] **Step 2: Refresh current task state**
 
 Update `docs/TASKS.md` so the current section reflects no open implementation work after validation:
 
@@ -290,7 +292,7 @@ Update `docs/TASKS.md` so the current section reflects no open implementation wo
 - [x] Added lightweight GSD-inspired next-action, verification, and existing-project evidence guidance without expanding the skill into a workflow framework.
 ```
 
-- [ ] **Step 3: Add the work changelog entry**
+- [x] **Step 3: Add the work changelog entry**
 
 Add this dated entry to the top of `docs/CHANGELOG_WORK.md`:
 
@@ -303,7 +305,7 @@ Add this dated entry to the top of `docs/CHANGELOG_WORK.md`:
 - Verified with unittest, `py_compile`, and installed-copy sync comparison.
 ```
 
-- [ ] **Step 4: Check memory references**
+- [x] **Step 4: Check memory references**
 
 Run:
 
@@ -320,7 +322,7 @@ Expected: matches in all three files.
 **Files:**
 - Review all modified files.
 
-- [ ] **Step 1: Review the final diff**
+- [x] **Step 1: Review the final diff**
 
 Run:
 
@@ -330,7 +332,7 @@ git diff -- project-memory/SKILL.md project-memory/scripts/setup_project_memory.
 
 Expected: diff contains only the lightweight next-action, verification, existing-project evidence, README, tests, and repo-memory updates described in this plan.
 
-- [ ] **Step 2: Check worktree status**
+- [x] **Step 2: Check worktree status**
 
 Run:
 
@@ -341,7 +343,7 @@ git status --short
 Expected: only the planned files are modified, plus this plan file if it has not been committed separately.
 The repo-local memory files under `docs/PROJECT_CONTEXT.md`, `docs/DECISIONS.md`, `docs/TASKS.md`, and `docs/CHANGELOG_WORK.md` are intentionally ignored for public packaging; do not force-add them unless the user explicitly changes that packaging boundary.
 
-- [ ] **Step 3: Commit the implementation**
+- [x] **Step 3: Commit the implementation**
 
 Run:
 

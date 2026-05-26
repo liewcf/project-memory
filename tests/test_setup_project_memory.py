@@ -40,6 +40,12 @@ class SetupProjectMemoryTests(unittest.TestCase):
         with redirect_stdout(io.StringIO()):
             return self.module.main()
 
+    def run_setup_with_output(self) -> tuple[int, str]:
+        output = io.StringIO()
+        with redirect_stdout(output):
+            result = self.module.main()
+        return result, output.getvalue()
+
     def test_creates_docs_directory_and_memory_files(self) -> None:
         self.assertEqual(self.run_setup(), 0)
 
@@ -114,6 +120,35 @@ Keep the local build command documented.
         self.assertIn("\n\n## Other Notes", agents)
         self.assertEqual(agents.count(self.module.AGENTS_REQUIREMENT_HEADING), 1)
 
+    def test_existing_docs_path_agents_requirement_missing_safety_is_updated(self) -> None:
+        Path("AGENTS.md").write_text(
+            """# Existing Agent Notes
+
+Keep the local build command documented.
+
+## Project Memory Requirement
+
+- `docs/PROJECT_CONTEXT.md` for stable project facts.
+- `docs/DECISIONS.md` for dated technical or product decisions.
+- `docs/TASKS.md` for current tasks.
+- `docs/CHANGELOG_WORK.md` for dated notes.
+
+## Other Notes
+
+- Preserve this section.
+""",
+            encoding="utf-8",
+        )
+
+        result, output = self.run_setup_with_output()
+
+        agents = Path("AGENTS.md").read_text(encoding="utf-8")
+        self.assertEqual(result, 0)
+        self.assertIn("Do not store secrets", agents)
+        self.assertIn("## Other Notes", agents)
+        self.assertIn("Updated: AGENTS.md", output)
+        self.assertEqual(agents.count(self.module.AGENTS_REQUIREMENT_HEADING), 1)
+
     def test_migrates_legacy_root_files_to_docs(self) -> None:
         legacy_files = ["PROJECT_CONTEXT.md", "DECISIONS.md", "TASKS.md", "CHANGELOG_WORK.md"]
         for filename in legacy_files:
@@ -142,6 +177,19 @@ Keep the local build command documented.
         project_context = (docs_dir / "PROJECT_CONTEXT.md").read_text(encoding="utf-8")
         self.assertIn("Existing docs content.", project_context)
         self.assertNotIn("Unknown.", project_context)
+
+    def test_reports_legacy_root_files_left_when_docs_versions_exist(self) -> None:
+        docs_dir = Path("docs")
+        docs_dir.mkdir(exist_ok=True)
+        (docs_dir / "TASKS.md").write_text("# Tasks\n\nDocs content.\n", encoding="utf-8")
+        Path("TASKS.md").write_text("# Tasks\n\nRoot legacy content.\n", encoding="utf-8")
+
+        result, output = self.run_setup_with_output()
+
+        self.assertEqual(result, 0)
+        self.assertTrue(Path("TASKS.md").exists())
+        self.assertIn("Docs content.", (docs_dir / "TASKS.md").read_text(encoding="utf-8"))
+        self.assertIn("Legacy root files left in place: TASKS.md", output)
 
     def test_rejects_symlinked_agents_file(self) -> None:
         outside_dir = Path(self.temp_dir.name) / "outside"

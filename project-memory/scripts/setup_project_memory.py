@@ -155,6 +155,7 @@ def has_project_memory_requirement(content: str) -> bool:
         and "docs/decisions.md" in lowered
         and "docs/tasks.md" in lowered
         and "docs/changelog_work.md" in lowered
+        and "do not store secrets" in lowered
     )
 
 
@@ -177,9 +178,10 @@ def ensure_agents_requirement(root: Path, path: Path) -> str:
     return "updated"
 
 
-def migrate_legacy_files(root: Path) -> list[str]:
+def migrate_legacy_files(root: Path) -> tuple[list[str], list[str]]:
     """Move legacy root memory files to docs/ if docs/ versions don't exist."""
     migrated: list[str] = []
+    left_in_place: list[str] = []
     docs_dir = ensure_safe_project_path(root, DOCS_DIR)
 
     docs_dir.mkdir(exist_ok=True)
@@ -192,8 +194,10 @@ def migrate_legacy_files(root: Path) -> list[str]:
             ensure_safe_project_path(root, legacy_path)
             legacy_path.rename(docs_path)
             migrated.append(filename)
+        elif legacy_path.exists() and docs_path.exists():
+            left_in_place.append(filename)
 
-    return migrated
+    return migrated, left_in_place
 
 
 def main() -> int:
@@ -203,7 +207,7 @@ def main() -> int:
     updated: list[str] = []
     unchanged: list[str] = []
 
-    migrated = migrate_legacy_files(root)
+    migrated, legacy_left_in_place = migrate_legacy_files(root)
     docs_dir = ensure_safe_project_path(root, DOCS_DIR)
 
     docs_dir.mkdir(exist_ok=True)
@@ -232,6 +236,8 @@ def main() -> int:
     print(f"Root: {root}")
     if migrated:
         print(f"Migrated from root: {', '.join(migrated)}")
+    if legacy_left_in_place:
+        print(f"Legacy root files left in place: {', '.join(legacy_left_in_place)}")
     print(f"Created: {', '.join(created) if created else 'none'}")
     print(f"Updated: {', '.join(updated) if updated else 'none'}")
     print(f"Existing: {', '.join(existing) if existing else 'none'}")

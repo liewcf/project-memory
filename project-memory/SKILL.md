@@ -113,6 +113,8 @@ Use `review` to inspect the five memory files without rewriting them by default.
 - Vague or unhelpful notes.
 - Suggested cleanup.
 
+For drift-prone claims such as branch sync, CI presence, published state, or current commands, verify cheap local evidence before reporting them as current.
+
 Do not rewrite everything unless the user asks for edits.
 
 ## Status
@@ -127,6 +129,7 @@ Use `status` to read the memory files and summarize:
 - Recommended next action, including whether it is confirmed by memory or inferred from limited evidence.
 
 Be clear when a fact is absent, stale, or inferred from limited memory.
+Verify cheap local evidence before presenting drift-prone operational facts as current.
 
 ## Repair
 

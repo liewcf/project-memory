@@ -27,6 +27,12 @@ mkdir -p ~/.agents/skills
 cp -R project-memory ~/.agents/skills/
 ```
 
+To refresh an existing installed copy from this checkout:
+
+```bash
+rsync -a --delete --exclude '__pycache__' project-memory/ ~/.agents/skills/project-memory/
+```
+
 Restart Codex or open a new session if the skill does not appear immediately.
 
 ## Usage
@@ -89,7 +95,7 @@ python3 -m unittest discover -s tests -p "test_*.py"
 Check the setup script parses:
 
 ```bash
-python3 -m py_compile project-memory/scripts/setup_project_memory.py
+PYTHONPYCACHEPREFIX=/tmp/project-memory-pycache python3 -m py_compile project-memory/scripts/setup_project_memory.py
 ```
 
 ## Repository Layout
