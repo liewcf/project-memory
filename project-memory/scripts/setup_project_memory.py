@@ -127,6 +127,23 @@ def read_text(path: Path) -> str:
         return path.read_text()
 
 
+def ensure_safe_project_path(root: Path, path: Path) -> Path:
+    root_path = root.resolve()
+    candidate = path if path.is_absolute() else root / path
+
+    if candidate.is_symlink():
+        raise RuntimeError(f"Refusing to use symlinked project memory path: {path}")
+
+    try:
+        candidate.resolve(strict=False).relative_to(root_path)
+    except ValueError as exc:
+        raise RuntimeError(
+            f"Refusing to use project memory path outside project root: {path}"
+        ) from exc
+
+    return candidate
+
+
 def has_project_memory_requirement(content: str) -> bool:
     match = AGENTS_REQUIREMENT_PATTERN.search(content)
     if not match:
@@ -141,7 +158,8 @@ def has_project_memory_requirement(content: str) -> bool:
     )
 
 
-def ensure_agents_requirement(path: Path) -> str:
+def ensure_agents_requirement(root: Path, path: Path) -> str:
+    path = ensure_safe_project_path(root, path)
     content = read_text(path)
     if has_project_memory_requirement(content):
         return "unchanged"
@@ -162,14 +180,16 @@ def ensure_agents_requirement(path: Path) -> str:
 def migrate_legacy_files(root: Path) -> list[str]:
     """Move legacy root memory files to docs/ if docs/ versions don't exist."""
     migrated: list[str] = []
+    docs_dir = ensure_safe_project_path(root, DOCS_DIR)
 
-    DOCS_DIR.mkdir(exist_ok=True)
+    docs_dir.mkdir(exist_ok=True)
 
     for filename in LEGACY_ROOT_FILES:
         legacy_path = root / filename
-        docs_path = DOCS_DIR / filename
+        docs_path = ensure_safe_project_path(root, docs_dir / filename)
 
         if legacy_path.exists() and not docs_path.exists():
+            ensure_safe_project_path(root, legacy_path)
             legacy_path.rename(docs_path)
             migrated.append(filename)
 
@@ -184,11 +204,12 @@ def main() -> int:
     unchanged: list[str] = []
 
     migrated = migrate_legacy_files(root)
+    docs_dir = ensure_safe_project_path(root, DOCS_DIR)
 
-    DOCS_DIR.mkdir(exist_ok=True)
+    docs_dir.mkdir(exist_ok=True)
 
     for filename in MEMORY_FILES:
-        path = DOCS_DIR / filename
+        path = ensure_safe_project_path(root, docs_dir / filename)
         if path.exists():
             existing.append(filename)
             continue
@@ -196,12 +217,12 @@ def main() -> int:
         path.write_text(template_for(filename), encoding="utf-8")
         created.append(filename)
 
-    agents_path = root / "AGENTS.md"
+    agents_path = ensure_safe_project_path(root, Path("AGENTS.md"))
     if not agents_path.exists():
         agents_path.write_text(template_for("AGENTS.md"), encoding="utf-8")
         created.append("AGENTS.md")
     else:
-        result = ensure_agents_requirement(agents_path)
+        result = ensure_agents_requirement(root, agents_path)
         if result == "updated":
             updated.append("AGENTS.md")
         else:

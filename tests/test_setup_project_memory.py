@@ -143,6 +143,39 @@ Keep the local build command documented.
         self.assertIn("Existing docs content.", project_context)
         self.assertNotIn("Unknown.", project_context)
 
+    def test_rejects_symlinked_agents_file(self) -> None:
+        outside_dir = Path(self.temp_dir.name) / "outside"
+        outside_dir.mkdir()
+        outside_agents = outside_dir / "target_agents.md"
+        outside_agents.write_text("# Outside file\n", encoding="utf-8")
+        Path("AGENTS.md").symlink_to(outside_agents)
+
+        with self.assertRaisesRegex(RuntimeError, "symlinked project memory path"):
+            self.run_setup()
+
+        self.assertEqual(outside_agents.read_text(encoding="utf-8"), "# Outside file\n")
+
+    def test_rejects_symlinked_docs_directory(self) -> None:
+        outside_docs = Path(self.temp_dir.name) / "outside-docs"
+        outside_docs.mkdir()
+        Path("docs").symlink_to(outside_docs)
+
+        with self.assertRaisesRegex(RuntimeError, "symlinked project memory path"):
+            self.run_setup()
+
+        self.assertEqual(list(outside_docs.iterdir()), [])
+
+    def test_rejects_broken_docs_file_symlink(self) -> None:
+        docs_dir = Path("docs")
+        docs_dir.mkdir()
+        outside_target = Path(self.temp_dir.name) / "outside-project-context.md"
+        (docs_dir / "PROJECT_CONTEXT.md").symlink_to(outside_target)
+
+        with self.assertRaisesRegex(RuntimeError, "symlinked project memory path"):
+            self.run_setup()
+
+        self.assertFalse(outside_target.exists())
+
 
 if __name__ == "__main__":
     unittest.main()
