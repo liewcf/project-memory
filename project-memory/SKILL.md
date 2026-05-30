@@ -33,6 +33,21 @@ When memory conflicts with a higher-authority source, follow the higher-authorit
 4. Project memory.
 5. General best practices.
 
+## Completion Memory Check
+
+At task wrap-up, decide whether project memory needs an update.
+
+Run `$project-memory update` only when durable project context changed:
+
+- Architecture, workflow, commands, or constraints.
+- Important decisions, product rules, or accepted spec deviations.
+- Current task state, blockers, verification state, or next action.
+- Durable open questions that affect future implementation.
+
+Skip the update for trivial edits, routine formatting, failed experiments with no durable lesson, raw command output, or changes with no future value.
+
+If no update is needed, say so briefly in the wrap-up.
+
 ## Mode Selection
 
 Infer the mode from the user request when possible. Explicit commands such as `$project-memory setup`, `$project-memory update`, `$project-memory review`, `$project-memory status`, `$project-memory repair`, and `$project-memory compact` map directly to the matching mode.
@@ -64,7 +79,7 @@ After running setup, inspect the output and mention which files were created, up
 
 ## Update
 
-Use `update` after meaningful work. Read the relevant project files and current memory before editing.
+Use `update` after meaningful work. Run the completion memory check first during task wrap-up. If an update is needed, read the relevant project files and current memory before editing.
 
 When updating `docs/TASKS.md`, keep one short `Recommended Next Action` when evidence supports it. Mark whether active work has been verified, is unverified, or needs a specific check. Remove stale next actions after the work lands.
 

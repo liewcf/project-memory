@@ -46,7 +46,7 @@ $project-memory setup
 Other supported modes:
 
 - `$project-memory status`: summarize current project memory.
-- `$project-memory update`: update memory after meaningful work.
+- `$project-memory update`: update memory after meaningful work when durable project context changed.
 - `$project-memory review`: inspect memory quality without rewriting by default.
 - `$project-memory repair`: normalize broken or duplicated memory structure.
 - `$project-memory compact`: shorten noisy or stale memory while preserving useful history.
@@ -57,7 +57,7 @@ Other supported modes:
 2. Run `$project-memory setup` in the project root.
 3. If this is an existing project, run `$project-memory update` to populate memory from current repo evidence.
 4. Do coding work.
-5. Run `$project-memory update` after meaningful changes.
+5. At wrap-up, run a completion memory check; run `$project-memory update` only if durable project context changed.
 6. Future agents read the memory files before continuing work.
 
 ## Memory Quality
@@ -71,6 +71,8 @@ Avoid recording temporary task progress, obvious implementation details, one-off
 ## Lightweight Continuity
 
 Good project memory should leave future agents with one clear next action, the current verification state, and facts backed by local evidence.
+
+At task wrap-up, run a completion memory check. Update memory only if durable project context changed, such as decisions, commands, constraints, task state, blockers, verification state, or next action.
 
 This skill intentionally does not add phases, roadmaps, subagents, workflow configuration, branch automation, or PR automation. Use it as repo memory, not as a project management system.
 

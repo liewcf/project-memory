@@ -13,6 +13,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT_PATH = ROOT / "project-memory" / "scripts" / "setup_project_memory.py"
+SKILL_PATH = ROOT / "project-memory" / "SKILL.md"
+README_PATH = ROOT / "README.md"
+OPENAI_YAML_PATH = ROOT / "project-memory" / "agents" / "openai.yaml"
 
 
 def load_setup_module():
@@ -223,6 +226,25 @@ Keep the local build command documented.
             self.run_setup()
 
         self.assertFalse(outside_target.exists())
+
+
+class SkillInstructionTests(unittest.TestCase):
+    def test_completion_memory_check_guidance_is_documented(self) -> None:
+        skill = SKILL_PATH.read_text(encoding="utf-8")
+        readme = README_PATH.read_text(encoding="utf-8")
+        openai_yaml = OPENAI_YAML_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("## Completion Memory Check", skill)
+        self.assertIn("durable project context changed", skill)
+        self.assertIn("trivial edits, routine formatting", skill)
+        self.assertIn("If no update is needed, say so briefly", skill)
+        self.assertIn("Run the completion memory check first", skill)
+        self.assertIn("completion memory check", readme)
+        self.assertIn("only if durable project context changed", readme)
+        self.assertIn(
+            'default_prompt: "Use $project-memory to set up, update, or review repo memory."',
+            openai_yaml,
+        )
 
 
 if __name__ == "__main__":
