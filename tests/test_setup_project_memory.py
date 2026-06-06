@@ -246,6 +246,31 @@ class SkillInstructionTests(unittest.TestCase):
             openai_yaml,
         )
 
+    def test_worked_examples_cover_recurring_edge_cases(self) -> None:
+        required_phrases = [
+            "## Worked Examples",
+            "Do not run `$project-memory update`",
+            "Do not inspect other project threads",
+            "Other threads can be stale, private, or about a different checkout.",
+            "Keep current items in `docs/TASKS.md` as bullets",
+        ]
+
+        for path in [SKILL_PATH, README_PATH]:
+            content = path.read_text(encoding="utf-8")
+            with self.subTest(path=path):
+                for phrase in required_phrases:
+                    self.assertIn(phrase, content)
+
+    def test_setup_command_uses_portable_skill_dir_placeholder(self) -> None:
+        portable_command = "python3 <project-memory skill dir>/scripts/setup_project_memory.py"
+        hardcoded_command = "python3 ~/.agents/skills/project-memory/scripts/setup_project_memory.py"
+
+        for path in [SKILL_PATH, README_PATH]:
+            content = path.read_text(encoding="utf-8")
+            with self.subTest(path=path):
+                self.assertIn(portable_command, content)
+                self.assertNotIn(hardcoded_command, content)
+
 
 if __name__ == "__main__":
     unittest.main()

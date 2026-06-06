@@ -48,6 +48,12 @@ Skip the update for trivial edits, routine formatting, failed experiments with n
 
 If no update is needed, say so briefly in the wrap-up.
 
+## Worked Examples
+
+- No durable change: Do not run `$project-memory update` after task completion when the work was a typo fix, routine formatting, a reverted experiment, or already covered by current memory. Say that no update was needed.
+- Other threads: Do not inspect other project threads for `update` unless the user asks for that context or provides it directly. Other threads can be stale, private, or about a different checkout. Use the current repo, current task, local files, current memory, and cheap git evidence.
+- Current tasks: Keep current items in `docs/TASKS.md` as bullets. Use numbered lists only when the order itself matters, such as a step-by-step next action.
+
 ## Mode Selection
 
 Infer the mode from the user request when possible. Explicit commands such as `$project-memory setup`, `$project-memory update`, `$project-memory review`, `$project-memory status`, `$project-memory repair`, and `$project-memory compact` map directly to the matching mode.
@@ -63,10 +69,10 @@ If the mode is unclear:
 
 ## Setup
 
-For `$project-memory setup`, run the bundled script from the repo root:
+For `$project-memory setup`, resolve the skill directory from this loaded `SKILL.md` path. Then run the bundled script from the repo root:
 
 ```bash
-python3 ~/.agents/skills/project-memory/scripts/setup_project_memory.py
+python3 <project-memory skill dir>/scripts/setup_project_memory.py
 ```
 
 The script creates missing memory files, preserves existing files, and adds or refreshes the `AGENTS.md` project memory requirement when needed.

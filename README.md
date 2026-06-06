@@ -76,12 +76,18 @@ At task wrap-up, run a completion memory check. Update memory only if durable pr
 
 This skill intentionally does not add phases, roadmaps, subagents, workflow configuration, branch automation, or PR automation. Use it as repo memory, not as a project management system.
 
+## Worked Examples
+
+- No durable change: Do not run `$project-memory update` after task completion when the work was a typo fix, routine formatting, a reverted experiment, or already covered by current memory. Say that no update was needed.
+- Other threads: Do not inspect other project threads for `update` unless the user asks for that context or provides it directly. Other threads can be stale, private, or about a different checkout. Use the current repo, current task, local files, current memory, and cheap git evidence.
+- Current tasks: Keep current items in `docs/TASKS.md` as bullets. Use numbered lists only when the order itself matters, such as a step-by-step next action.
+
 ## Manual Setup Script
 
-After installing the skill, you can run the bundled setup script directly:
+After installing the skill, you can run the bundled setup script directly. Replace `<project-memory skill dir>` with the installed `project-memory` skill folder.
 
 ```bash
-python3 ~/.agents/skills/project-memory/scripts/setup_project_memory.py
+python3 <project-memory skill dir>/scripts/setup_project_memory.py
 ```
 
 Run it from the root of the project where you want memory files created.
