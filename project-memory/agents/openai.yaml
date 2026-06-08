@@ -1,7 +1,7 @@
 interface:
   display_name: "Project Memory"
-  short_description: "Set up and maintain repo memory files for Codex."
-  default_prompt: "Use $project-memory to set up, update, or review repo memory."
+  short_description: "Set up and maintain project memory files for Codex."
+  default_prompt: "Use $project-memory to set up, update, or review project memory."
 
 policy:
   allow_implicit_invocation: true

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Initialize repo-level project memory files for Codex.
+"""Initialize project-level memory files for Codex.
 
-Run this script from the root of a software project or repository.
+Run this script from the root of a project folder or repository.
 It is safe to run repeatedly: existing files are preserved, and the
 AGENTS.md memory requirement is added or refreshed when needed.
 """
@@ -35,15 +35,27 @@ AGENTS_REQUIREMENT_PATTERN = re.compile(
 )
 AGENTS_REQUIREMENT = f"""{AGENTS_REQUIREMENT_HEADING}
 
-Keep these repo-level memory files accurate and concise when work changes project context:
+Keep these project memory files accurate and concise when work changes durable context in project folders or repositories:
 
-- `docs/PROJECT_CONTEXT.md` for stable project facts, architecture, workflows, and constraints.
-- `docs/DECISIONS.md` for dated technical or product decisions and rationale.
+- `docs/PROJECT_CONTEXT.md` for stable project facts, structure, workflows, resources, and constraints.
+- `docs/DECISIONS.md` for dated project, product, technical, process, or content decisions and rationale.
 - `docs/TASKS.md` for current tasks, blockers, and next actions.
-- `docs/CHANGELOG_WORK.md` for dated notes on changed files, behavior, docs, config, dependencies, tooling, tests, and verification.
+- `docs/CHANGELOG_WORK.md` for dated notes on changed files, docs, assets, behavior, deliverables, process, tooling, checks, and verification.
 
 Do not store secrets, credentials, API keys, private tokens, database dumps, or sensitive personal data in project memory.
 """
+
+AGENTS_REQUIREMENT_REQUIRED_PHRASES = (
+    "project folders or repositories",
+    "docs/project_context.md",
+    "stable project facts, structure, workflows, resources, and constraints",
+    "docs/decisions.md",
+    "project, product, technical, process, or content decisions",
+    "docs/tasks.md",
+    "docs/changelog_work.md",
+    "changed files, docs, assets, behavior, deliverables, process, tooling, checks, and verification",
+    "do not store secrets",
+)
 
 
 def today() -> str:
@@ -66,40 +78,39 @@ def template_for(filename: str) -> str:
 - Primary users: Unknown.
 - Current status: Unknown.
 
-## Architecture
+## Project Structure
 
 - Unknown.
 
-## Development Workflow
+## Key Workflows
 
-- Package manager: Unknown.
-- Build command: Unknown.
-- Test command: Unknown.
-- Run command: Unknown.
+- Important commands or checks: Unknown.
+- Review method: Unknown.
+- Acceptance criteria: Unknown.
 
 ## Constraints
 
-- Do not assume framework, deployment, package manager, or infrastructure details until verified from repo evidence.
+- Do not assume framework, deployment, package manager, infrastructure, or domain details until verified from project evidence.
 """,
         "DECISIONS.md": f"""# Decisions
 
 ## {current_date}
 
-- Initialized project memory. No major technical or product decisions recorded yet.
+- Initialized project memory. No major project, product, technical, process, or content decisions recorded yet.
 """,
         "TASKS.md": """# Tasks
 
 ## Recommended Next Action
 
-- Confirm project purpose, build/test commands, and active priorities.
+- Confirm project purpose, key workflows, review checks, and active priorities.
 
 ## Current
 
-- [ ] Confirm project purpose, build/test commands, and active priorities.
+- [ ] Confirm project purpose, key workflows, review checks, and active priorities.
 
 ## Verification
 
-- Not yet verified against repo evidence.
+- Not yet verified against project evidence.
 
 ## Blockers
 
@@ -150,13 +161,7 @@ def has_project_memory_requirement(content: str) -> bool:
         return False
 
     lowered = match.group(0).lower()
-    return (
-        "docs/project_context.md" in lowered
-        and "docs/decisions.md" in lowered
-        and "docs/tasks.md" in lowered
-        and "docs/changelog_work.md" in lowered
-        and "do not store secrets" in lowered
-    )
+    return all(phrase in lowered for phrase in AGENTS_REQUIREMENT_REQUIRED_PHRASES)
 
 
 def ensure_agents_requirement(root: Path, path: Path) -> str:

@@ -1,22 +1,22 @@
 # Project Memory Skill
 
-A Codex skill for setting up and maintaining concise repo-level memory files across software projects.
+A Codex skill for setting up and maintaining concise project-level memory files across project folders and repositories.
 
-The skill gives future coding agents a stable place to find project context, decisions, active tasks, and recent work without relying only on chat history.
+The skill gives future Codex sessions a stable place to find project context, decisions, active tasks, and recent work without relying only on chat history. It supports software, writing, research, design, operations, client work, and other structured projects.
 
 ## What It Creates
 
 Running setup in a project root creates or updates these files:
 
 - `AGENTS.md`: practical instructions for future agents.
-- `docs/PROJECT_CONTEXT.md`: stable project facts, architecture, workflows, and constraints.
-- `docs/DECISIONS.md`: dated technical or product decisions and rationale.
+- `docs/PROJECT_CONTEXT.md`: stable project facts, structure, workflows, resources, and constraints.
+- `docs/DECISIONS.md`: dated project, product, technical, process, or content decisions and rationale.
 - `docs/TASKS.md`: current tasks, blockers, and next actions.
-- `docs/CHANGELOG_WORK.md`: dated work log for changed files, behavior, docs, config, dependencies, tooling, tests, and verification.
+- `docs/CHANGELOG_WORK.md`: dated work log for changed files, docs, assets, behavior, deliverables, process, tooling, checks, and verification.
 
 Existing files are preserved. The setup script adds or refreshes the project memory requirement in `AGENTS.md` when needed.
 
-Setup initializes the memory structure only; it does not populate project-specific facts from repo evidence. In an existing project, run `$project-memory update` after setup to fill in concise facts, tasks, decisions, and recent work.
+Setup initializes the memory structure only; it does not populate project-specific facts from project evidence. In an existing project, run `$project-memory update` after setup to fill in concise facts, tasks, decisions, and recent work.
 
 ## Install
 
@@ -37,7 +37,7 @@ Restart Codex or open a new session if the skill does not appear immediately.
 
 ## Usage
 
-From a software project root, ask Codex:
+From a project folder or repository root, ask Codex:
 
 ```text
 $project-memory setup
@@ -55,18 +55,18 @@ Other supported modes:
 
 1. Install the skill.
 2. Run `$project-memory setup` in the project root.
-3. If this is an existing project, run `$project-memory update` to populate memory from current repo evidence.
-4. Do coding work.
+3. If this is an existing project, run `$project-memory update` to populate memory from current project evidence.
+4. Do project work.
 5. At wrap-up, run a completion memory check; run `$project-memory update` only if durable project context changed.
 6. Future agents read the memory files before continuing work.
 
 ## Memory Quality
 
-Project memory is guidance, not the source of truth. Keep only stable, meaningful facts that are likely to affect future implementation decisions.
+Project memory is guidance, not the source of truth. Keep only stable, meaningful facts that are likely to affect future work.
 
-Good memory entries include durable conventions, design decisions, product or domain rules, architecture constraints, accepted spec deviations, open questions, and validation requirements.
+Good memory entries include durable conventions, design decisions, product or domain rules, process rules, content rules, structure constraints, accepted spec deviations, open questions, and validation requirements.
 
-Avoid recording temporary task progress, obvious implementation details, one-off debugging notes, routine changes, raw command output, secrets, credentials, or private user data. When memory conflicts with the current user instruction, current spec, or current code and tests, follow the current higher-authority source and update memory only if the correction is durable.
+Avoid recording temporary task progress, obvious implementation details, one-off debugging notes, routine changes, raw command output, secrets, credentials, or private user data. When memory conflicts with the current user instruction, current spec, current project files, or current checks, follow the current higher-authority source and update memory only if the correction is durable.
 
 ## Lightweight Continuity
 
@@ -74,7 +74,7 @@ Good project memory should leave future agents with one clear next action, the c
 
 At task wrap-up, run a completion memory check. Update memory only if durable project context changed, such as decisions, commands, constraints, task state, blockers, verification state, or next action.
 
-This skill intentionally does not add phases, roadmaps, subagents, workflow configuration, branch automation, or PR automation. Use it as repo memory, not as a project management system.
+This skill intentionally does not add phases, roadmaps, subagents, workflow configuration, branch automation, or PR automation. Use it as project memory, not as a project management system.
 
 ## Worked Examples
 

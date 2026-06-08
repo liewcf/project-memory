@@ -1,27 +1,27 @@
 ---
 name: project-memory
-description: Use when initializing, updating, reviewing, repairing, compacting, or summarizing repo-level project memory files for Codex across software projects.
+description: Use when initializing, updating, reviewing, repairing, compacting, or summarizing project-level memory files for Codex across project folders and repositories.
 ---
 
 # Project Memory
 
-Use this skill to set up and maintain concise repo-level memory for Codex sessions. It is generic for software projects and repositories; do not assume WordPress or any specific framework unless the project evidence supports it.
+Use this skill to set up and maintain concise project-level memory for Codex sessions. It is generic for project folders and repositories, including software, writing, research, design, operations, client work, and other structured projects. Do not assume WordPress, software tooling, or any specific domain unless the project evidence supports it.
 
 ## Memory Files
 
 Maintain these files in the project root:
 
 - `AGENTS.md`: short practical instructions for future agents.
-- `docs/PROJECT_CONTEXT.md`: stable facts about the project, architecture, workflows, and constraints.
-- `docs/DECISIONS.md`: dated append-only technical or product decisions.
+- `docs/PROJECT_CONTEXT.md`: stable facts about the project, structure, workflows, resources, and constraints.
+- `docs/DECISIONS.md`: dated append-only project, product, technical, process, or content decisions.
 - `docs/TASKS.md`: current tasks, blockers, and next actions.
-- `docs/CHANGELOG_WORK.md`: dated append-only work log for files, behavior, docs, config, dependencies, and tooling changes.
+- `docs/CHANGELOG_WORK.md`: dated append-only work log for changed files, docs, assets, behavior, deliverables, process, tooling, checks, and verification.
 
 Never store secrets, passwords, API keys, private tokens, credentials, database dumps, or sensitive personal data in project memory.
 
 ## Memory Quality Bar
 
-Project memory is guidance, not the source of truth. Keep only facts that are stable, meaningful, and likely to affect future implementation decisions.
+Project memory is guidance, not the source of truth. Keep only facts that are stable, meaningful, and likely to affect future work.
 
 Do not record temporary task progress, obvious implementation details, one-off debugging notes, routine changes, raw command output, secrets, credentials, or private user data.
 
@@ -29,7 +29,7 @@ When memory conflicts with a higher-authority source, follow the higher-authorit
 
 1. Current user instruction.
 2. Current spec or task requirements.
-3. Existing code and tests.
+3. Existing project files and checks.
 4. Project memory.
 5. General best practices.
 
@@ -39,10 +39,10 @@ At task wrap-up, decide whether project memory needs an update.
 
 Run `$project-memory update` only when durable project context changed:
 
-- Architecture, workflow, commands, or constraints.
-- Important decisions, product rules, or accepted spec deviations.
+- Structure, workflow, commands, review checks, resources, or constraints.
+- Important decisions, product rules, process rules, content rules, or accepted spec deviations.
 - Current task state, blockers, verification state, or next action.
-- Durable open questions that affect future implementation.
+- Durable open questions that affect future work.
 
 Skip the update for trivial edits, routine formatting, failed experiments with no durable lesson, raw command output, or changes with no future value.
 
@@ -77,9 +77,9 @@ python3 <project-memory skill dir>/scripts/setup_project_memory.py
 
 The script creates missing memory files, preserves existing files, and adds or refreshes the `AGENTS.md` project memory requirement when needed.
 
-Setup only initializes the memory structure. It does not infer or populate project-specific facts from repository files, docs, configuration, or history.
+Setup only initializes the memory structure. It does not infer or populate project-specific facts from project files, docs, configuration, or history.
 
-If setup runs in an existing project with meaningful source files, docs, configuration, or history, recommend `$project-memory update` next. If the user asked to initialize memory for an existing project or to set up and populate memory, run setup first, then run update in the same turn unless they explicitly asked for setup only.
+If setup runs in an existing project with meaningful files, docs, configuration, assets, source files, or history, recommend `$project-memory update` next. If the user asked to initialize memory for an existing project or to set up and populate memory, run setup first, then run update in the same turn unless they explicitly asked for setup only.
 
 After running setup, inspect the output and mention which files were created, updated, already existed, or were unchanged.
 
@@ -89,17 +89,17 @@ Use `update` after meaningful work. Run the completion memory check first during
 
 When updating `docs/TASKS.md`, keep one short `Recommended Next Action` when evidence supports it. Mark whether active work has been verified, is unverified, or needs a specific check. Remove stale next actions after the work lands.
 
-For existing projects with sparse memory or `Unknown` placeholders, inspect the strongest local evidence before writing durable facts: `AGENTS.md`, README or docs, package/build configuration, test files, source layout, recent git history, and changelog-style notes when available. Use only evidence that exists; do not create roadmaps, phases, branches, PRs, or workflow state unless the user asks.
+For existing projects with sparse memory or `Unknown` placeholders, inspect the strongest local evidence before writing durable facts: `AGENTS.md`, README or docs, project files, assets, configuration, commands or review checks, source layout when present, recent git history when present, and changelog-style notes when available. Use only evidence that exists; do not create roadmaps, phases, branches, PRs, or workflow state unless the user asks.
 
 Update only what changed:
 
 - `docs/TASKS.md`: task status, blockers, next actions, owners, or follow-up state.
-- `docs/CHANGELOG_WORK.md`: dated entries for changed files, behavior, config, dependencies, documentation, tooling, tests, or verification.
-- `docs/DECISIONS.md`: important technical or product decisions, including rationale and date.
+- `docs/CHANGELOG_WORK.md`: dated entries for changed files, docs, assets, behavior, deliverables, process, config, tooling, checks, or verification.
+- `docs/DECISIONS.md`: important project, product, technical, process, or content decisions, including rationale and date.
 - `docs/PROJECT_CONTEXT.md`: stable project facts that changed or were newly discovered.
 - `AGENTS.md`: only when explicitly asked or when a recurring rule should become permanent.
 
-Update memory when a durable convention, design decision, product rule, architecture constraint, spec deviation, validation requirement, or open question is discovered. Avoid turning `docs/TASKS.md` or `docs/CHANGELOG_WORK.md` into a running transcript.
+Update memory when a durable convention, design decision, product rule, process rule, content rule, structure constraint, spec deviation, validation requirement, or open question is discovered. Avoid turning `docs/TASKS.md` or `docs/CHANGELOG_WORK.md` into a running transcript.
 
 Prefer concise dated append-only entries for `docs/DECISIONS.md` and `docs/CHANGELOG_WORK.md`. Keep claims factual and evidence-based.
 
@@ -134,7 +134,7 @@ Use `review` to inspect the five memory files without rewriting them by default.
 - Vague or unhelpful notes.
 - Suggested cleanup.
 
-For drift-prone claims such as branch sync, CI presence, published state, or current commands, verify cheap local evidence before reporting them as current.
+For drift-prone claims such as branch sync, CI presence, published state, current commands, or current deliverable status, verify cheap local evidence before reporting them as current.
 
 Do not rewrite everything unless the user asks for edits.
 
@@ -185,4 +185,4 @@ Prefer reducing repetition over removing information. Keep enough context for a 
 - Keep updates concise and factual.
 - Separate confirmed facts from assumptions.
 - Label inferred facts with source or confidence when useful.
-- Avoid project-specific framework claims unless verified from repo evidence.
+- Avoid project-specific framework, tooling, domain, or workflow claims unless verified from project evidence.

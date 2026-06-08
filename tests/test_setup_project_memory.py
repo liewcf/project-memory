@@ -66,11 +66,29 @@ class SetupProjectMemoryTests(unittest.TestCase):
         tasks = (Path("docs") / "TASKS.md").read_text(encoding="utf-8")
         self.assertIn("## Recommended Next Action", tasks)
         self.assertIn(
-            "- Confirm project purpose, build/test commands, and active priorities.",
+            "- Confirm project purpose, key workflows, review checks, and active priorities.",
             tasks,
         )
         self.assertIn("## Verification", tasks)
-        self.assertIn("- Not yet verified against repo evidence.", tasks)
+        self.assertIn("- Not yet verified against project evidence.", tasks)
+
+    def test_project_context_template_is_generic(self) -> None:
+        self.assertEqual(self.run_setup(), 0)
+
+        project_context = (Path("docs") / "PROJECT_CONTEXT.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("## Project Structure", project_context)
+        self.assertIn("## Key Workflows", project_context)
+        self.assertIn("- Important commands or checks: Unknown.", project_context)
+        self.assertIn("- Review method: Unknown.", project_context)
+        self.assertIn("- Acceptance criteria: Unknown.", project_context)
+        self.assertNotIn("## Architecture", project_context)
+        self.assertNotIn("## Development Workflow", project_context)
+        self.assertNotIn("Package manager:", project_context)
+        self.assertNotIn("Build command:", project_context)
+        self.assertNotIn("Test command:", project_context)
+        self.assertNotIn("Run command:", project_context)
 
     def test_second_run_does_not_duplicate_agents_requirement(self) -> None:
         self.assertEqual(self.run_setup(), 0)
@@ -120,6 +138,8 @@ Keep the local build command documented.
         self.assertIn("docs/DECISIONS.md", agents)
         self.assertIn("docs/TASKS.md", agents)
         self.assertIn("docs/CHANGELOG_WORK.md", agents)
+        self.assertIn("project, product, technical, process, or content decisions", agents)
+        self.assertIn("docs, assets, behavior, deliverables", agents)
         self.assertIn("\n\n## Other Notes", agents)
         self.assertEqual(agents.count(self.module.AGENTS_REQUIREMENT_HEADING), 1)
 
@@ -148,8 +168,46 @@ Keep the local build command documented.
         agents = Path("AGENTS.md").read_text(encoding="utf-8")
         self.assertEqual(result, 0)
         self.assertIn("Do not store secrets", agents)
+        self.assertIn("project folders or repositories", agents)
         self.assertIn("## Other Notes", agents)
         self.assertIn("Updated: AGENTS.md", output)
+        self.assertEqual(agents.count(self.module.AGENTS_REQUIREMENT_HEADING), 1)
+
+    def test_existing_old_canonical_agents_requirement_is_updated(self) -> None:
+        Path("AGENTS.md").write_text(
+            """# Existing Agent Notes
+
+Keep the local build command documented.
+
+## Project Memory Requirement
+
+Keep these repo-level memory files accurate and concise when work changes project context:
+
+- `docs/PROJECT_CONTEXT.md` for stable project facts, architecture, workflows, and constraints.
+- `docs/DECISIONS.md` for dated technical or product decisions and rationale.
+- `docs/TASKS.md` for current tasks, blockers, and next actions.
+- `docs/CHANGELOG_WORK.md` for dated notes on changed files, behavior, docs, config, dependencies, tooling, tests, and verification.
+
+Do not store secrets, credentials, API keys, private tokens, database dumps, or sensitive personal data in project memory.
+
+## Other Notes
+
+- Preserve this section.
+""",
+            encoding="utf-8",
+        )
+
+        result, output = self.run_setup_with_output()
+
+        agents = Path("AGENTS.md").read_text(encoding="utf-8")
+        self.assertEqual(result, 0)
+        self.assertIn("Updated: AGENTS.md", output)
+        self.assertIn("project folders or repositories", agents)
+        self.assertIn("project, product, technical, process, or content decisions", agents)
+        self.assertIn("docs, assets, behavior, deliverables", agents)
+        self.assertNotIn("repo-level memory files", agents)
+        self.assertNotIn("architecture, workflows", agents)
+        self.assertIn("## Other Notes", agents)
         self.assertEqual(agents.count(self.module.AGENTS_REQUIREMENT_HEADING), 1)
 
     def test_migrates_legacy_root_files_to_docs(self) -> None:
@@ -242,7 +300,7 @@ class SkillInstructionTests(unittest.TestCase):
         self.assertIn("completion memory check", readme)
         self.assertIn("only if durable project context changed", readme)
         self.assertIn(
-            'default_prompt: "Use $project-memory to set up, update, or review repo memory."',
+            'default_prompt: "Use $project-memory to set up, update, or review project memory."',
             openai_yaml,
         )
 
