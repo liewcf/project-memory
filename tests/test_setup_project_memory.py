@@ -14,6 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT_PATH = ROOT / "project-memory" / "scripts" / "setup_project_memory.py"
 SKILL_PATH = ROOT / "project-memory" / "SKILL.md"
+MODE_REFERENCE_PATH = ROOT / "project-memory" / "references" / "modes.md"
 README_PATH = ROOT / "README.md"
 OPENAI_YAML_PATH = ROOT / "project-memory" / "agents" / "openai.yaml"
 
@@ -186,9 +187,11 @@ Keep these repo-level memory files accurate and concise when work changes projec
 - `docs/PROJECT_CONTEXT.md` for stable project facts, architecture, workflows, and constraints.
 - `docs/DECISIONS.md` for dated technical or product decisions and rationale.
 - `docs/TASKS.md` for current tasks, blockers, and next actions.
-- `docs/CHANGELOG_WORK.md` for dated notes on changed files, behavior, docs, config, dependencies, tooling, tests, and verification.
+- `docs/CHANGELOG_WORK.md` for dated notes on changed files, behavior, docs,
+  config, dependencies, tooling, tests, and verification.
 
-Do not store secrets, credentials, API keys, private tokens, database dumps, or sensitive personal data in project memory.
+Do not store secrets, credentials, API keys, private tokens, database dumps,
+or sensitive personal data in project memory.
 
 ## Other Notes
 
@@ -318,6 +321,24 @@ class SkillInstructionTests(unittest.TestCase):
             with self.subTest(path=path):
                 for phrase in required_phrases:
                     self.assertIn(phrase, content)
+
+    def test_skill_defers_mode_details_to_reference(self) -> None:
+        skill = SKILL_PATH.read_text(encoding="utf-8")
+        mode_reference = MODE_REFERENCE_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("references/modes.md", skill)
+        self.assertLessEqual(len(skill.splitlines()), 100)
+
+        for heading in [
+            "## Setup",
+            "## Update",
+            "## Review",
+            "## Status",
+            "## Repair",
+            "## Compact",
+        ]:
+            with self.subTest(heading=heading):
+                self.assertIn(heading, mode_reference)
 
     def test_setup_command_uses_portable_skill_dir_placeholder(self) -> None:
         portable_command = "python3 <project-memory skill dir>/scripts/setup_project_memory.py"

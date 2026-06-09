@@ -33,17 +33,28 @@ AGENTS_REQUIREMENT_PATTERN = re.compile(
     r"(?ms)^##\s+Project Memory Requirement\s*\n.*?(?=^##\s+|\Z)",
     re.IGNORECASE,
 )
-AGENTS_REQUIREMENT = f"""{AGENTS_REQUIREMENT_HEADING}
-
-Keep these project memory files accurate and concise when work changes durable context in project folders or repositories:
-
-- `docs/PROJECT_CONTEXT.md` for stable project facts, structure, workflows, resources, and constraints.
-- `docs/DECISIONS.md` for dated project, product, technical, process, or content decisions and rationale.
-- `docs/TASKS.md` for current tasks, blockers, and next actions.
-- `docs/CHANGELOG_WORK.md` for dated notes on changed files, docs, assets, behavior, deliverables, process, tooling, checks, and verification.
-
-Do not store secrets, credentials, API keys, private tokens, database dumps, or sensitive personal data in project memory.
-"""
+AGENTS_REQUIREMENT_LINES = (
+    AGENTS_REQUIREMENT_HEADING,
+    "",
+    (
+        "Keep these project memory files accurate and concise when work changes "
+        "durable context in project folders or repositories:"
+    ),
+    "",
+    "- `docs/PROJECT_CONTEXT.md` for stable project facts, structure, workflows, resources, and constraints.",
+    "- `docs/DECISIONS.md` for dated project, product, technical, process, or content decisions and rationale.",
+    "- `docs/TASKS.md` for current tasks, blockers, and next actions.",
+    (
+        "- `docs/CHANGELOG_WORK.md` for dated notes on changed files, docs, assets, "
+        "behavior, deliverables, process, tooling, checks, and verification."
+    ),
+    "",
+    (
+        "Do not store secrets, credentials, API keys, private tokens, database dumps, "
+        "or sensitive personal data in project memory."
+    ),
+)
+AGENTS_REQUIREMENT = "\n".join(AGENTS_REQUIREMENT_LINES) + "\n"
 
 AGENTS_REQUIREMENT_REQUIRED_PHRASES = (
     "project folders or repositories",
@@ -53,7 +64,10 @@ AGENTS_REQUIREMENT_REQUIRED_PHRASES = (
     "project, product, technical, process, or content decisions",
     "docs/tasks.md",
     "docs/changelog_work.md",
-    "changed files, docs, assets, behavior, deliverables, process, tooling, checks, and verification",
+    (
+        "changed files, docs, assets, behavior, deliverables, process, tooling, "
+        "checks, and verification"
+    ),
     "do not store secrets",
 )
 
@@ -66,10 +80,7 @@ def template_for(filename: str) -> str:
     current_date = today()
 
     templates = {
-        "AGENTS.md": f"""# Agent Instructions
-
-{AGENTS_REQUIREMENT}
-""",
+        "AGENTS.md": f"# Agent Instructions\n\n{AGENTS_REQUIREMENT}\n",
         "PROJECT_CONTEXT.md": """# Project Context
 
 ## Overview
@@ -90,7 +101,8 @@ def template_for(filename: str) -> str:
 
 ## Constraints
 
-- Do not assume framework, deployment, package manager, infrastructure, or domain details until verified from project evidence.
+- Do not assume framework, deployment, package manager, infrastructure, or domain
+  details until verified from project evidence.
 """,
         "DECISIONS.md": f"""# Decisions
 
@@ -205,15 +217,9 @@ def migrate_legacy_files(root: Path) -> tuple[list[str], list[str]]:
     return migrated, left_in_place
 
 
-def main() -> int:
-    root = Path.cwd()
+def ensure_docs_memory_files(root: Path, docs_dir: Path) -> tuple[list[str], list[str]]:
     created: list[str] = []
     existing: list[str] = []
-    updated: list[str] = []
-    unchanged: list[str] = []
-
-    migrated, legacy_left_in_place = migrate_legacy_files(root)
-    docs_dir = ensure_safe_project_path(root, DOCS_DIR)
 
     docs_dir.mkdir(exist_ok=True)
 
@@ -226,27 +232,67 @@ def main() -> int:
         path.write_text(template_for(filename), encoding="utf-8")
         created.append(filename)
 
+    return created, existing
+
+
+def ensure_agents_file(root: Path) -> tuple[str, str]:
     agents_path = ensure_safe_project_path(root, Path("AGENTS.md"))
     if not agents_path.exists():
         agents_path.write_text(template_for("AGENTS.md"), encoding="utf-8")
-        created.append("AGENTS.md")
-    else:
-        result = ensure_agents_requirement(root, agents_path)
-        if result == "updated":
-            updated.append("AGENTS.md")
-        else:
-            unchanged.append("AGENTS.md")
+        return "created", "AGENTS.md"
+
+    return ensure_agents_requirement(root, agents_path), "AGENTS.md"
+
+
+def print_summary(
+    root: Path,
+    migrated: list[str],
+    legacy_left_in_place: list[str],
+    created: list[str],
+    updated: list[str],
+    existing: list[str],
+    unchanged: list[str],
+) -> None:
+    def show(items: list[str]) -> str:
+        return ", ".join(items) if items else "none"
 
     print("Project memory setup summary")
     print(f"Root: {root}")
     if migrated:
-        print(f"Migrated from root: {', '.join(migrated)}")
+        print(f"Migrated from root: {show(migrated)}")
     if legacy_left_in_place:
-        print(f"Legacy root files left in place: {', '.join(legacy_left_in_place)}")
-    print(f"Created: {', '.join(created) if created else 'none'}")
-    print(f"Updated: {', '.join(updated) if updated else 'none'}")
-    print(f"Existing: {', '.join(existing) if existing else 'none'}")
-    print(f"Unchanged: {', '.join(unchanged) if unchanged else 'none'}")
+        print(f"Legacy root files left in place: {show(legacy_left_in_place)}")
+    print(f"Created: {show(created)}")
+    print(f"Updated: {show(updated)}")
+    print(f"Existing: {show(existing)}")
+    print(f"Unchanged: {show(unchanged)}")
+
+
+def main() -> int:
+    root = Path.cwd()
+    migrated, legacy_left_in_place = migrate_legacy_files(root)
+    docs_dir = ensure_safe_project_path(root, DOCS_DIR)
+    created, existing = ensure_docs_memory_files(root, docs_dir)
+    updated: list[str] = []
+    unchanged: list[str] = []
+
+    agents_status, agents_name = ensure_agents_file(root)
+    if agents_status == "created":
+        created.append(agents_name)
+    elif agents_status == "updated":
+        updated.append(agents_name)
+    else:
+        unchanged.append(agents_name)
+
+    print_summary(
+        root,
+        migrated,
+        legacy_left_in_place,
+        created,
+        updated,
+        existing,
+        unchanged,
+    )
 
     return 0
 

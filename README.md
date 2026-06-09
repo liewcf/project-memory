@@ -112,6 +112,7 @@ PYTHONPYCACHEPREFIX=/tmp/project-memory-pycache python3 -m py_compile project-me
 project-memory/
   SKILL.md
   agents/openai.yaml
+  references/modes.md
   scripts/setup_project_memory.py
 tests/
   test_setup_project_memory.py
