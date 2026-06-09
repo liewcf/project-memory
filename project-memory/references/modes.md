@@ -35,9 +35,43 @@ Update only what changed:
   content decisions with rationale.
 - `docs/PROJECT_CONTEXT.md`: stable project facts that changed or were newly
   discovered.
-- `AGENTS.md`: only when asked or when a recurring rule should become permanent.
+- `AGENTS.md`: durable future-agent operating guidance, following the
+  `AGENTS.md Updates` rule below.
 
 Avoid turning `docs/TASKS.md` or `docs/CHANGELOG_WORK.md` into a transcript.
+
+### AGENTS.md Updates
+
+During `update`, do a quick check for whether `AGENTS.md` needs new or revised
+future-agent guidance. Edit `AGENTS.md` only when current evidence supports a
+durable operating rule.
+
+Start with cheap current evidence: the existing `AGENTS.md`, current memory
+files, README or docs, visible config, known commands/checks, source layout, and
+recent changelog notes. Use recent git history when it is available and likely
+to clarify a durable rule. Do not do a deep history review for every routine
+memory update.
+
+Promote only guidance future agents should act on repeatedly:
+
+- currently valid build, test, check, setup, release, or maintenance commands
+- source-of-truth files and ownership boundaries
+- public/private packaging boundaries
+- known pitfalls, blocked paths, or environment constraints
+- verification rules such as "do not claim X unless Y exists"
+
+Do not add task progress, detailed history, raw command output, temporary
+blockers, stale plans, or one-off notes to `AGENTS.md`. Keep those in the
+matching memory docs. Do not invent package managers, frameworks, CI, deploy
+commands, or release rules.
+
+Before adding a rule from older history, confirm it still matches current files
+or mark it as ambiguous and leave it out. Prefer revising or replacing stale
+guidance over adding duplicate guidance.
+
+After editing `AGENTS.md`, verify the edit with readback and, when available,
+`git diff -- AGENTS.md` or `git status --short`. In the update report, mention
+the `AGENTS.md` change and any ambiguity that affected it.
 
 ## Review
 

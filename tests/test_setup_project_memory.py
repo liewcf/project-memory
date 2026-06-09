@@ -340,6 +340,22 @@ class SkillInstructionTests(unittest.TestCase):
             with self.subTest(heading=heading):
                 self.assertIn(heading, mode_reference)
 
+    def test_agents_update_rule_promotes_only_durable_guidance(self) -> None:
+        mode_reference = MODE_REFERENCE_PATH.read_text(encoding="utf-8")
+
+        for phrase in [
+            "### AGENTS.md Updates",
+            "quick check for whether `AGENTS.md` needs new or revised",
+            "Edit `AGENTS.md` only when current evidence supports",
+            "Do not do a deep history review for every routine",
+            "Promote only guidance future agents should act on repeatedly",
+            "Do not add task progress, detailed history, raw command output",
+            "Do not invent package managers, frameworks, CI, deploy",
+            "confirm it still matches current files",
+        ]:
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, mode_reference)
+
     def test_setup_command_uses_portable_skill_dir_placeholder(self) -> None:
         portable_command = "python3 <project-memory skill dir>/scripts/setup_project_memory.py"
         hardcoded_command = "python3 ~/.agents/skills/project-memory/scripts/setup_project_memory.py"
