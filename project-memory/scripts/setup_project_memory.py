@@ -12,21 +12,16 @@ from datetime import date
 from pathlib import Path
 import re
 
-
-DOCS_DIR = Path("docs")
-MEMORY_FILES = (
-    "PROJECT_CONTEXT.md",
-    "DECISIONS.md",
-    "TASKS.md",
-    "CHANGELOG_WORK.md",
+from metadata import (
+    DOCS_DIR,
+    MEMORY_FILES,
+    expected_metadata,
+    ensure_frontmatter,
+    parse_frontmatter,
+    render_frontmatter,
 )
 
-LEGACY_ROOT_FILES = (
-    "PROJECT_CONTEXT.md",
-    "DECISIONS.md",
-    "TASKS.md",
-    "CHANGELOG_WORK.md",
-)
+LEGACY_ROOT_FILES = MEMORY_FILES
 
 AGENTS_REQUIREMENT_HEADING = "## Project Memory Requirement"
 AGENTS_REQUIREMENT_PATTERN = re.compile(
@@ -53,6 +48,11 @@ AGENTS_REQUIREMENT_LINES = (
         "Do not store secrets, credentials, API keys, private tokens, database dumps, "
         "or sensitive personal data in project memory."
     ),
+    "",
+    (
+        "docs/*.md memory files use Project Memory Metadata v1 frontmatter; "
+        "preserve it when editing. AGENTS.md stays plain Markdown."
+    ),
 )
 AGENTS_REQUIREMENT = "\n".join(AGENTS_REQUIREMENT_LINES) + "\n"
 
@@ -69,6 +69,8 @@ AGENTS_REQUIREMENT_REQUIRED_PHRASES = (
         "checks, and verification"
     ),
     "do not store secrets",
+    "project memory metadata v1 frontmatter",
+    "agents.md stays plain markdown",
 )
 
 
@@ -79,8 +81,11 @@ def today() -> str:
 def template_for(filename: str) -> str:
     current_date = today()
 
-    templates = {
-        "AGENTS.md": f"# Agent Instructions\n\n{AGENTS_REQUIREMENT}\n",
+    if filename == "AGENTS.md":
+        return f"# Agent Instructions\n\n{AGENTS_REQUIREMENT}\n"
+
+    # Build rich body for docs/ memory files
+    bodies = {
         "PROJECT_CONTEXT.md": """# Project Context
 
 ## Overview
@@ -140,7 +145,9 @@ def template_for(filename: str) -> str:
 """,
     }
 
-    return templates[filename]
+    body = bodies[filename]
+    fm = render_frontmatter(expected_metadata(filename))
+    return f"---\n{fm}---\n\n{body}"
 
 
 def read_text(path: Path) -> str:
@@ -210,6 +217,14 @@ def migrate_legacy_files(root: Path) -> tuple[list[str], list[str]]:
         if legacy_path.exists() and not docs_path.exists():
             ensure_safe_project_path(root, legacy_path)
             legacy_path.rename(docs_path)
+            # Prepend frontmatter to migrated file if it lacks it
+            content = read_text(docs_path)
+            _meta, _body, had_fm = parse_frontmatter(content)
+            if not had_fm:
+                updated_text, _ = ensure_frontmatter(
+                    content, filename, touch=False
+                )
+                docs_path.write_text(updated_text, encoding="utf-8")
             migrated.append(filename)
         elif legacy_path.exists() and docs_path.exists():
             left_in_place.append(filename)

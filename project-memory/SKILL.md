@@ -4,13 +4,9 @@ description: Use when setting up, updating, reviewing, repairing, compacting, or
 ---
 
 # Project Memory
+Use this skill to keep concise project-level memory for Codex. It is generic for project folders and repositories. Do not assume a framework, toolchain, domain, or deployment setup unless current project evidence supports it.
 
-Use this skill to keep concise project-level memory for Codex. It is generic for
-project folders and repositories. Do not assume a framework, toolchain, domain, or
-deployment setup unless current project evidence supports it.
-
-For detailed mode rules after you choose a mode, read
-`references/modes.md`.
+For detailed mode rules after you choose a mode, read `references/modes.md`.
 
 ## Memory Files
 
@@ -24,6 +20,11 @@ Maintain these files in the project root:
 
 Never store secrets, passwords, API keys, private tokens, credentials, database
 dumps, or sensitive personal data.
+
+## Metadata Hygiene
+
+- `docs/*.md` files carry Project Memory Metadata v1 frontmatter; `AGENTS.md` stays plain Markdown.
+- Per-mode metadata instructions are in `references/modes.md`.
 
 ## Mode Selection
 
@@ -91,9 +92,7 @@ recommend `compact`. Do not run compaction automatically unless requested.
 
 ## Authority And Editing
 
-Project memory is guidance, not the source of truth. Follow higher-authority
-sources in this order: current user instruction, current task/spec, current
-project files and checks, project memory, then general best practices.
+Project memory is guidance, not the source of truth. Follow higher-authority sources in this order: current user instruction, current task/spec, current project files and checks, project memory, then general best practices.
 
 Preserve useful user-authored content. Revise existing entries instead of adding
 duplicates. Avoid project-specific framework, tooling, domain, or workflow claims

@@ -13,6 +13,9 @@ needed for the request.
   assets, source files, or history, recommend `$project-memory update` next.
 - If the user asked to set up and populate memory, run setup first, then update
   in the same turn unless they explicitly asked for setup only.
+- When creating new docs files, include valid Project Memory Metadata v1
+  frontmatter. When migrating legacy files, prepend frontmatter if missing.
+  Keep `AGENTS.md` as plain Markdown without frontmatter.
 
 ## Update
 
@@ -39,6 +42,10 @@ Update only what changed:
   `AGENTS.md Updates` rule below.
 
 Avoid turning `docs/TASKS.md` or `docs/CHANGELOG_WORK.md` into a transcript.
+
+When updating a memory file, update the `updated` field in its Project Memory
+Metadata v1 frontmatter to the current date when durable content changed.
+Preserve existing meaningful metadata fields.
 
 ### AGENTS.md Updates
 
@@ -79,6 +86,10 @@ Use `review` to inspect the five memory files without rewriting them by default.
 Report missing files, stale sections, duplicated content, overly long content,
 vague notes, and suggested cleanup.
 
+Check whether docs memory files have valid Project Memory Metadata v1
+frontmatter. Do not rewrite automatically during review. Recommend
+`$project-memory repair` if metadata is missing or invalid.
+
 For drift-prone claims such as branch sync, CI presence, published state,
 current commands, or current deliverable status, verify cheap local evidence
 before reporting them as current.
@@ -107,6 +118,16 @@ Use `repair` to fix structural problems while preserving history:
 - Preserve historical notes.
 - Keep `AGENTS.md` short and practical.
 
+Repair missing or invalid Project Memory Metadata v1 frontmatter in docs memory
+files. Preserve existing Markdown body content. Keep `AGENTS.md` plain Markdown.
+
+Scripts for metadata repair:
+
+```bash
+python3 <project-memory skill dir>/scripts/repair_metadata.py
+python3 <project-memory skill dir>/scripts/repair_metadata.py --touch
+```
+
 Do not silently delete historical context. If content is obsolete but possibly
 useful, move it to an archive section or mark it historical.
 
@@ -119,6 +140,9 @@ Use `compact` when memory files are noisy or too long:
 - Preserve recent changelog entries.
 - Archive excessive old detail into an archive section.
 - Keep `docs/TASKS.md` easy to scan.
+
+Preserve Project Memory Metadata v1 frontmatter when compacting memory files.
+Compact only the Markdown body unless metadata itself is stale or invalid.
 
 Prefer reducing repetition over removing information. Keep enough context for a
 future Codex session to continue safely.

@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import io
 import os
+import sys
 import tempfile
 import unittest
 from contextlib import redirect_stdout
@@ -13,6 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT_PATH = ROOT / "project-memory" / "scripts" / "setup_project_memory.py"
+SCRIPTS_DIR = ROOT / "project-memory" / "scripts"
 SKILL_PATH = ROOT / "project-memory" / "SKILL.md"
 MODE_REFERENCE_PATH = ROOT / "project-memory" / "references" / "modes.md"
 README_PATH = ROOT / "README.md"
@@ -20,6 +22,9 @@ OPENAI_YAML_PATH = ROOT / "project-memory" / "agents" / "openai.yaml"
 
 
 def load_setup_module():
+    scripts_dir = str(SCRIPTS_DIR)
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
     spec = importlib.util.spec_from_file_location("setup_project_memory", SCRIPT_PATH)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"Unable to load {SCRIPT_PATH}")
@@ -287,6 +292,52 @@ or sensitive personal data in project memory.
             self.run_setup()
 
         self.assertFalse(outside_target.exists())
+
+    def test_setup_created_docs_files_include_frontmatter(self) -> None:
+        self.assertEqual(self.run_setup(), 0)
+
+        for filename in self.module.MEMORY_FILES:
+            with self.subTest(filename=filename):
+                content = (Path("docs") / filename).read_text(encoding="utf-8")
+                self.assertTrue(
+                    content.startswith("---\n"),
+                    f"docs/{filename} should start with YAML frontmatter",
+                )
+                self.assertIn("doc_type:", content)
+                self.assertIn("status:", content)
+
+    def test_setup_created_agents_md_has_no_frontmatter(self) -> None:
+        self.assertEqual(self.run_setup(), 0)
+
+        agents = Path("AGENTS.md").read_text(encoding="utf-8")
+        self.assertFalse(
+            agents.startswith("---"),
+            "AGENTS.md should not start with YAML frontmatter",
+        )
+
+    def test_migrated_legacy_files_get_frontmatter(self) -> None:
+        for filename in ["TASKS.md", "DECISIONS.md"]:
+            Path(filename).write_text(
+                f"# Legacy {filename}\n\nLegacy content.\n", encoding="utf-8"
+            )
+
+        self.assertEqual(self.run_setup(), 0)
+
+        for filename in ["TASKS.md", "DECISIONS.md"]:
+            with self.subTest(filename=filename):
+                content = (Path("docs") / filename).read_text(encoding="utf-8")
+                self.assertTrue(
+                    content.startswith("---\n"),
+                    f"Migrated docs/{filename} should have frontmatter",
+                )
+                self.assertIn("Legacy content.", content)
+
+    def test_agents_requirement_includes_frontmatter_line(self) -> None:
+        self.assertEqual(self.run_setup(), 0)
+
+        agents = Path("AGENTS.md").read_text(encoding="utf-8")
+        self.assertIn("project memory metadata v1", agents.lower())
+        self.assertIn("agents.md stays plain markdown", agents.lower())
 
 
 class SkillInstructionTests(unittest.TestCase):

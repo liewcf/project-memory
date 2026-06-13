@@ -106,6 +106,25 @@ Check the setup script parses:
 PYTHONPYCACHEPREFIX=/tmp/project-memory-pycache python3 -m py_compile project-memory/scripts/setup_project_memory.py
 ```
 
+## Metadata Hygiene
+
+Memory files under `docs/` carry Project Memory Metadata v1 YAML frontmatter (title, doc_type, status, dates, tags, audience, related). `AGENTS.md` stays plain Markdown without frontmatter. The Markdown body remains the source of truth.
+
+Validate metadata:
+
+```bash
+python3 <project-memory skill dir>/scripts/validate_metadata.py
+python3 <project-memory skill dir>/scripts/validate_metadata.py --root /path/to/project
+```
+
+Repair metadata:
+
+```bash
+python3 <project-memory skill dir>/scripts/repair_metadata.py
+python3 <project-memory skill dir>/scripts/repair_metadata.py --touch
+python3 <project-memory skill dir>/scripts/repair_metadata.py --root /path/to/project
+```
+
 ## Repository Layout
 
 ```text
@@ -113,9 +132,15 @@ project-memory/
   SKILL.md
   agents/openai.yaml
   references/modes.md
+  scripts/metadata.py
   scripts/setup_project_memory.py
+  scripts/validate_metadata.py
+  scripts/repair_metadata.py
 tests/
   test_setup_project_memory.py
+  test_metadata.py
+  test_validate_metadata.py
+  test_repair_metadata.py
 ```
 
 The root-level `AGENTS.md` is the only root project memory file. `docs/PROJECT_CONTEXT.md`, `docs/DECISIONS.md`, `docs/TASKS.md`, and `docs/CHANGELOG_WORK.md` describe development history for this source package.
