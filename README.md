@@ -133,9 +133,14 @@ project-memory/
   agents/openai.yaml
   references/modes.md
   scripts/metadata.py
+  scripts/metadata_defaults.py
+  scripts/metadata_frontmatter.py
+  scripts/metadata_repair.py
+  scripts/metadata_validation.py
   scripts/setup_project_memory.py
   scripts/validate_metadata.py
   scripts/repair_metadata.py
+  tests/test_package_smoke.py
 tests/
   test_setup_project_memory.py
   test_metadata.py
