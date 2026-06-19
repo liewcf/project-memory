@@ -2,9 +2,21 @@
 
 Load only the section needed for the chosen mode.
 
+## Before Work
+
+Before substantial work, read existing memory before acting:
+
+1. Confirm the project root.
+2. Read `AGENTS.md` for operating rules, then `docs/TASKS.md` for current state and blockers and `docs/PROJECT_CONTEXT.md` for stable facts. Read `docs/DECISIONS.md` and `docs/CHANGELOG_WORK.md` when they matter for the task.
+3. Read source-of-truth files referenced in memory when they matter for the task.
+4. Briefly summarize the relevant context before acting.
+
+If project memory does not exist yet, recommend `$project-memory setup` or continue normally. Do not create memory at the start unless the user asks.
+
 ## Setup
 
 - Run the bundled setup script from the target project root.
+- The script creates missing memory files, preserves existing files, migrates legacy root files when safe, and refreshes the `AGENTS.md` memory requirement. It initializes structure only and does not infer project facts.
 - Summarize created, updated, existing, migrated, unchanged, and left-in-place files.
 - For existing projects with meaningful files or history, recommend `$project-memory update` next.
 - If asked to set up and populate memory, run setup then update unless setup-only was requested.

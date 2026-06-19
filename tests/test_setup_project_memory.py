@@ -391,6 +391,20 @@ class SkillInstructionTests(unittest.TestCase):
             with self.subTest(heading=heading):
                 self.assertIn(heading, mode_reference)
 
+        # Before-Work reading ritual is deferred detail that belongs in the
+        # reference, not the entrypoint. Pin it here so it cannot regress.
+        for phrase in [
+            "## Before Work",
+            "Read `AGENTS.md` for operating rules",
+            "Read source-of-truth files referenced in memory",
+            "Briefly summarize the relevant context before acting",
+            "recommend `$project-memory setup` or continue normally",
+        ]:
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, mode_reference)
+        self.assertIn("## Before Substantive Work", skill)
+        self.assertIn("`## Before Work` in `references/modes.md`", skill)
+
     def test_agents_update_rule_promotes_only_durable_guidance(self) -> None:
         mode_reference = MODE_REFERENCE_PATH.read_text(encoding="utf-8")
 

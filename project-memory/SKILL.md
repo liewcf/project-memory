@@ -1,10 +1,10 @@
 ---
 name: project-memory
-description: Use when setting up, updating, reviewing, repairing, compacting, or summarizing Codex project memory files.
+description: Use when setting up, updating, reviewing, repairing, compacting, or summarizing project memory files across Codex, Claude, and other agent sessions.
 ---
 
 # Project Memory
-Use this skill to keep concise project-level memory for Codex. It is generic for project folders and repositories. Do not assume a framework, toolchain, domain, or deployment setup unless current project evidence supports it.
+Use this skill to keep concise project-level memory for Codex, Claude, and other agent sessions. It is generic for project folders and repositories. Do not assume a framework, toolchain, domain, or deployment setup unless current project evidence supports it.
 
 For detailed mode rules after you choose a mode, read `references/modes.md`.
 
@@ -18,8 +18,8 @@ Maintain these files in the project root:
 - `docs/TASKS.md`: current tasks, blockers, verification state, and next actions.
 - `docs/CHANGELOG_WORK.md`: dated notes on changed files, docs, assets, behavior, deliverables, process, tooling, checks, and verification.
 
-Never store secrets, passwords, API keys, private tokens, credentials, database
-dumps, or sensitive personal data.
+Never store secrets, passwords, API keys, private tokens, credentials, database dumps, or sensitive
+personal data. Note that a secret or credential was configured or verified without recording its value.
 
 ## Metadata Hygiene
 
@@ -49,13 +49,14 @@ For `$project-memory setup`, resolve the skill directory from this loaded
 python3 <project-memory skill dir>/scripts/setup_project_memory.py
 ```
 
-The script creates missing memory files, preserves existing files, migrates
-legacy root files when safe, and refreshes the `AGENTS.md` memory requirement.
-Setup only initializes the memory structure. It does not infer project facts.
+Setup creates or migrates memory files and refreshes the `AGENTS.md` memory
+requirement; it does not infer project facts. Report created, updated, existing,
+migrated, unchanged, and left-in-place files. In an existing project, recommend
+or run `update` next unless the user asked for setup only.
 
-After setup, report created, updated, existing, migrated, unchanged, and
-left-in-place files. If this is an existing project, recommend or run `update` next
-unless the user asked for setup only.
+## Before Substantive Work
+
+For substantial work, read existing memory before acting. See `## Before Work` in `references/modes.md` for the step order.
 
 ## Completion Memory Check
 
@@ -92,7 +93,7 @@ recommend `compact`. Do not run compaction automatically unless requested.
 
 ## Authority And Editing
 
-Project memory is guidance, not the source of truth. Follow higher-authority sources in this order: current user instruction, current task/spec, current project files and checks, project memory, then general best practices.
+Project memory is guidance, not the source of truth. Follow higher-authority sources in this order: current user instruction, current task/spec, current project files and checks, project memory, then general best practices. When current project files or checks contradict memory, follow the current source and note the conflict in memory so the drift is visible; update memory only if the change is durable.
 
 Preserve useful user-authored content. Revise existing entries instead of adding
 duplicates. Avoid project-specific framework, tooling, domain, or workflow claims

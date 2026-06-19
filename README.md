@@ -1,6 +1,6 @@
 # Project Memory Skill
 
-A Codex skill for setting up and maintaining concise project-level memory files across project folders and repositories.
+An agent skill for setting up and maintaining concise project-level memory files across project folders and repositories, for Codex, Claude, and other coding-agent sessions.
 
 The skill gives future Codex sessions a stable place to find project context, decisions, active tasks, and recent work without relying only on chat history. It supports software, writing, research, design, operations, client work, and other structured projects.
 
