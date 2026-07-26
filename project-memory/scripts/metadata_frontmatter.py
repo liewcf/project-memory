@@ -11,12 +11,11 @@ def parse_frontmatter(
     text: str,
 ) -> tuple[dict[str, object], str, bool]:
     stripped = text.lstrip("\n")
-    if not stripped.startswith("---"):
+    opening = re.match(r"^---[ \t]*(?:\n|$)", stripped)
+    if opening is None:
         return {}, text, False
 
-    rest = stripped[3:]
-    if rest.startswith("\n"):
-        rest = rest[1:]
+    rest = stripped[opening.end() :]
 
     match = re.compile(r"^---[ \t]*$", re.MULTILINE).search(rest)
     if match is None:
@@ -56,6 +55,7 @@ def _parse_yaml_block(block: str) -> dict[str, object]:
             continue
 
         _reject_nested_yaml(raw_line, current_key)
+        raise ValueError("Unsupported YAML syntax: unrecognized top-level line")
 
     return result
 

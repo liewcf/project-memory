@@ -16,6 +16,7 @@
 - **Depends on**: `plans/001-verification-baseline.md`
 - **Category**: correctness
 - **Planned at**: commit `0766747`, 2026-07-14
+- **Execution status**: DONE — verified in the 2026-07-27 worktree
 
 ## Why this matters
 
@@ -115,11 +116,11 @@ globally invalid types and historical dates still pass.
 
 ## Done criteria
 
-- [ ] Impossible calendar dates fail validation and are repaired.
-- [ ] Known filenames enforce their expected `doc_type`.
-- [ ] Unknown/direct helper filenames retain generic allowed-value behavior.
-- [ ] Existing test suites and compile checks pass.
-- [ ] Only in-scope files change.
+- [x] Impossible calendar dates fail validation and are repaired.
+- [x] Known filenames enforce their expected `doc_type`.
+- [x] Unknown/direct helper filenames retain generic allowed-value behavior.
+- [x] Existing test suites and compile checks pass.
+- [x] Plan 004 implementation changes are limited to the in-scope files.
 
 ## STOP conditions
 

@@ -20,6 +20,7 @@ from metadata import (
     parse_frontmatter,
     render_frontmatter,
 )
+from path_safety import ensure_safe_project_path
 
 LEGACY_ROOT_FILES = MEMORY_FILES
 
@@ -155,23 +156,6 @@ def read_text(path: Path) -> str:
         return path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
         return path.read_text()
-
-
-def ensure_safe_project_path(root: Path, path: Path) -> Path:
-    root_path = root.resolve()
-    candidate = path if path.is_absolute() else root / path
-
-    if candidate.is_symlink():
-        raise RuntimeError(f"Refusing to use symlinked project memory path: {path}")
-
-    try:
-        candidate.resolve(strict=False).relative_to(root_path)
-    except ValueError as exc:
-        raise RuntimeError(
-            f"Refusing to use project memory path outside project root: {path}"
-        ) from exc
-
-    return candidate
 
 
 def has_project_memory_requirement(content: str) -> bool:

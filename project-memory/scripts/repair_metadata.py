@@ -23,6 +23,12 @@ from metadata import (
     expected_metadata,
     resolve_root,
 )
+from path_safety import (
+    UnsafeProjectPath,
+    open_project_directory,
+    read_text_at,
+    write_text_at,
+)
 
 
 def main() -> int:
@@ -40,55 +46,65 @@ def main() -> int:
     args = parser.parse_args()
 
     root = resolve_root(args.root)
-    docs_dir = root / DOCS_DIR
     had_error = False
 
-    # Ensure docs/ directory exists
     try:
-        docs_dir.mkdir(exist_ok=True)
-    except OSError as exc:
-        print(f"ERROR: cannot create docs/ directory: {exc}")
+        docs_context = open_project_directory(root, DOCS_DIR, create=True)
+        docs_fd = docs_context.__enter__()
+    except (OSError, UnsafeProjectPath) as exc:
+        print(f"ERROR: docs/ ({exc})")
         return 1
 
-    for filename in MEMORY_FILES:
-        rel = f"docs/{filename}"
-        path = docs_dir / filename
+    try:
+        for filename in MEMORY_FILES:
+            rel = f"docs/{filename}"
 
-        if not path.exists():
-            # Create file with default frontmatter + minimal body
-            fm = render_frontmatter(expected_metadata(filename))
-            body = default_body(filename)
-            content = f"---\n{fm}---\n\n{body}"
             try:
-                path.write_text(content, encoding="utf-8")
-                print(f"Created metadata: {rel}")
-            except OSError as exc:
-                print(f"SKIPPED: {rel} (cannot write: {exc})")
+                text = read_text_at(docs_fd, filename, rel)
+            except FileNotFoundError:
+                fm = render_frontmatter(expected_metadata(filename))
+                body = default_body(filename)
+                content = f"---\n{fm}---\n\n{body}"
+                try:
+                    write_text_at(
+                        docs_fd,
+                        filename,
+                        rel,
+                        content,
+                        create=True,
+                    )
+                    print(f"Created metadata: {rel}")
+                except (OSError, UnsafeProjectPath) as exc:
+                    print(f"SKIPPED: {rel} (cannot write: {exc})")
+                    had_error = True
+                continue
+            except (OSError, UnsafeProjectPath) as exc:
+                print(f"SKIPPED: {rel} (cannot read: {exc})")
                 had_error = True
-            continue
+                continue
 
-        try:
-            text = path.read_text(encoding="utf-8")
-        except OSError as exc:
-            print(f"SKIPPED: {rel} (cannot read: {exc})")
-            had_error = True
-            continue
-
-        try:
-            updated_text, status = ensure_frontmatter(
-                text, filename, touch=args.touch
-            )
-        except ValueError as exc:
-            print(f"SKIPPED: {rel} ({exc})")
-            had_error = True
-            continue
-
-        if status == "unchanged":
-            print(f"Skipped unchanged: {rel}")
-        else:
             try:
-                path.write_text(updated_text, encoding="utf-8")
-            except OSError as exc:
+                updated_text, status = ensure_frontmatter(
+                    text, filename, touch=args.touch
+                )
+            except ValueError as exc:
+                print(f"SKIPPED: {rel} ({exc})")
+                had_error = True
+                continue
+
+            if status == "unchanged":
+                print(f"Skipped unchanged: {rel}")
+                continue
+
+            try:
+                write_text_at(
+                    docs_fd,
+                    filename,
+                    rel,
+                    updated_text,
+                    create=False,
+                )
+            except (OSError, UnsafeProjectPath) as exc:
                 print(f"SKIPPED: {rel} (cannot write: {exc})")
                 had_error = True
                 continue
@@ -97,6 +113,8 @@ def main() -> int:
                 print(f"Added metadata: {rel}")
             else:
                 print(f"Updated metadata: {rel}")
+    finally:
+        docs_context.__exit__(None, None, None)
 
     return 1 if had_error else 0
 

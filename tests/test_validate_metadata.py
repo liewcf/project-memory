@@ -137,6 +137,34 @@ class ValidateMetadataCwdTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("Invalid date format", result.stdout)
 
+    def test_impossible_calendar_date_fails(self) -> None:
+        _write_valid_docs(Path("docs"))
+        tasks_path = Path("docs") / "TASKS.md"
+        content = tasks_path.read_text(encoding="utf-8").replace(
+            f"created: {date.today().isoformat()}",
+            "created: 2026-02-31",
+        )
+        tasks_path.write_text(content, encoding="utf-8")
+
+        result = _run_validate()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Invalid date format for created", result.stdout)
+
+    def test_wrong_allowed_doc_type_for_filename_fails(self) -> None:
+        _write_valid_docs(Path("docs"))
+        tasks_path = Path("docs") / "TASKS.md"
+        content = tasks_path.read_text(encoding="utf-8").replace(
+            "doc_type: task_state",
+            "doc_type: context",
+        )
+        tasks_path.write_text(content, encoding="utf-8")
+
+        result = _run_validate()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("expected task_state", result.stdout)
+
     def test_agents_md_ignored(self) -> None:
         """AGENTS.md is not validated even if it exists."""
         _write_valid_docs(Path("docs"))

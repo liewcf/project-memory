@@ -16,6 +16,7 @@
 - **Depends on**: none
 - **Category**: security, docs
 - **Planned at**: commit `0766747`, 2026-07-14
+- **Execution status**: DONE — verified in the 2026-07-27 worktree
 
 ## Why this matters
 
@@ -114,10 +115,10 @@ or below 100 lines and the installed copy is not modified by this plan.
 
 ## Done criteria
 
-- [ ] Active and deferred guidance agree on the trust boundary.
-- [ ] Applicable AGENTS/current task/spec authority remains explicit.
-- [ ] Contract tests, full tests, package smoke, syntax, and line-cap checks pass.
-- [ ] Only the three in-scope files change.
+- [x] Active and deferred guidance agree on the trust boundary.
+- [x] Applicable AGENTS/current task/spec authority remains explicit.
+- [x] Contract tests, full tests, package smoke, syntax, and line-cap checks pass.
+- [x] Plan 005 implementation changes are limited to the three in-scope files.
 
 ## STOP conditions
 

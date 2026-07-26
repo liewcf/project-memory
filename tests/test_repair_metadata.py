@@ -163,6 +163,46 @@ class RepairMetadataCwdTests(unittest.TestCase):
         content = (Path("docs") / "TASKS.md").read_text(encoding="utf-8")
         self.assertIn("custom_field: my_value", content)
 
+    def test_unsupported_frontmatter_is_skipped_without_rewrite(self) -> None:
+        path = Path("docs") / "TASKS.md"
+        original = "---\ntitle: Tasks\nnot valid yaml\n---\n\n# Tasks\n"
+        path.write_text(original, encoding="utf-8")
+
+        result = _run_repair()
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("SKIPPED: docs/TASKS.md", result.stdout)
+        self.assertEqual(path.read_text(encoding="utf-8"), original)
+
+    def test_repairs_wrong_allowed_doc_type_and_impossible_date(self) -> None:
+        path = Path("docs") / "TASKS.md"
+        original = (
+            "---\n"
+            "title: Tasks\n"
+            "description: d\n"
+            "doc_type: context\n"
+            "status: active\n"
+            "created: 2026-02-31\n"
+            "updated: 2020-01-01\n"
+            "tags:\n"
+            "  - t\n"
+            "audience:\n"
+            "  - agent\n"
+            "related:\n"
+            "  - x\n"
+            "---\n\n"
+            "# Tasks\n"
+        )
+        path.write_text(original, encoding="utf-8")
+
+        result = _run_repair()
+        repaired = path.read_text(encoding="utf-8")
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("doc_type: task_state", repaired)
+        self.assertIn(f"created: {date.today().isoformat()}", repaired)
+        self.assertIn("# Tasks", repaired)
+
     def test_stable_field_order(self) -> None:
         _run_repair()
         content = (Path("docs") / "TASKS.md").read_text(encoding="utf-8")
@@ -224,6 +264,44 @@ class RepairMetadataRootTests(unittest.TestCase):
         _run_repair("--root", str(self.root))
         result = _run_validate("--root", str(self.root))
         self.assertEqual(result.returncode, 0)
+
+    def test_root_flag_rejects_symlinked_docs_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as outside_tmp:
+            outside_docs = Path(outside_tmp)
+            (self.root / "docs").rmdir()
+            (self.root / "docs").symlink_to(outside_docs)
+
+            result = _run_repair("--root", str(self.root))
+
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("ERROR: docs/", result.stdout)
+            self.assertEqual(list(outside_docs.iterdir()), [])
+
+    def test_root_flag_rejects_existing_file_symlink(self) -> None:
+        with tempfile.TemporaryDirectory() as outside_tmp:
+            outside_target = Path(outside_tmp) / "TASKS.md"
+            outside_target.write_text("outside content\n", encoding="utf-8")
+            (self.root / "docs" / "TASKS.md").symlink_to(outside_target)
+
+            result = _run_repair("--root", str(self.root))
+
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("SKIPPED: docs/TASKS.md", result.stdout)
+            self.assertEqual(
+                outside_target.read_text(encoding="utf-8"),
+                "outside content\n",
+            )
+
+    def test_root_flag_rejects_dangling_file_symlink(self) -> None:
+        with tempfile.TemporaryDirectory() as outside_tmp:
+            outside_target = Path(outside_tmp) / "missing-tasks.md"
+            (self.root / "docs" / "TASKS.md").symlink_to(outside_target)
+
+            result = _run_repair("--root", str(self.root))
+
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("SKIPPED: docs/TASKS.md", result.stdout)
+            self.assertFalse(outside_target.exists())
 
 
 if __name__ == "__main__":

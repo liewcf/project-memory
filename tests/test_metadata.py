@@ -132,6 +132,18 @@ class ParseFrontmatterTests(unittest.TestCase):
         self.assertEqual(meta["doc_type"], "context")
         self.assertEqual(body, "# Body\n")
 
+    def test_non_delimiter_prefix_is_not_frontmatter(self) -> None:
+        text = "---not-frontmatter\ntitle: Keep me\n---\n# Body\n"
+        meta, body, had_fm = self.m.parse_frontmatter(text)
+        self.assertEqual(meta, {})
+        self.assertEqual(body, text)
+        self.assertFalse(had_fm)
+
+    def test_rejects_unrecognized_top_level_line(self) -> None:
+        text = "---\ntitle: Test\nnot valid yaml\n---\nBody\n"
+        with self.assertRaisesRegex(ValueError, "unrecognized top-level line"):
+            self.m.parse_frontmatter(text)
+
     def test_quoted_string_double(self) -> None:
         text = '---\ntitle: "My Project"\n---\nBody\n'
         meta, body, had_fm = self.m.parse_frontmatter(text)
@@ -243,6 +255,30 @@ class ValidateMetadataTests(unittest.TestCase):
         errors = self.m.validate_metadata(meta)
         self.assertTrue(any("Invalid date format" in e for e in errors))
 
+    def test_impossible_calendar_date_is_invalid(self) -> None:
+        meta = self.m.expected_metadata("TASKS.md")
+        meta["created"] = "2026-02-31"
+        errors = self.m.validate_metadata(meta)
+        self.assertTrue(any("Invalid date format" in e for e in errors))
+
+    def test_valid_leap_day_is_accepted(self) -> None:
+        meta = self.m.expected_metadata("TASKS.md")
+        meta["created"] = "2024-02-29"
+        errors = self.m.validate_metadata(meta, "TASKS.md")
+        self.assertEqual(errors, [])
+
+    def test_known_filename_rejects_wrong_allowed_doc_type(self) -> None:
+        meta = self.m.expected_metadata("TASKS.md")
+        meta["doc_type"] = "context"
+        errors = self.m.validate_metadata(meta, "TASKS.md")
+        self.assertTrue(any("expected task_state" in e for e in errors))
+
+    def test_unknown_filename_keeps_generic_doc_type_validation(self) -> None:
+        meta = self.m.expected_metadata("TASKS.md")
+        meta["doc_type"] = "context"
+        errors = self.m.validate_metadata(meta, "NOTES.md")
+        self.assertEqual(errors, [])
+
     def test_tags_must_be_list(self) -> None:
         meta = self.m.expected_metadata("TASKS.md")
         meta["tags"] = "not-a-list"
@@ -290,6 +326,20 @@ class RepairMetadataTests(unittest.TestCase):
         repaired, changed = self.m.repair_metadata(meta, "TASKS.md")
         self.assertTrue(changed)
         self.assertEqual(repaired["doc_type"], "task_state")
+
+    def test_repairs_wrong_allowed_doc_type_for_known_file(self) -> None:
+        meta = self.m.expected_metadata("TASKS.md")
+        meta["doc_type"] = "context"
+        repaired, changed = self.m.repair_metadata(meta, "TASKS.md")
+        self.assertTrue(changed)
+        self.assertEqual(repaired["doc_type"], "task_state")
+
+    def test_repairs_impossible_calendar_date(self) -> None:
+        meta = self.m.expected_metadata("TASKS.md")
+        meta["created"] = "2026-02-31"
+        repaired, changed = self.m.repair_metadata(meta, "TASKS.md")
+        self.assertTrue(changed)
+        self.assertEqual(repaired["created"], self.today)
 
     def test_touch_bumps_updated(self) -> None:
         meta = self.m.expected_metadata("TASKS.md")
@@ -346,6 +396,12 @@ class EnsureFrontmatterTests(unittest.TestCase):
         self.assertEqual(status, "updated")
         # doc_type should be repaired
         self.assertIn("doc_type: task_state", result)
+
+    def test_preserves_non_delimiter_prefix_as_body(self) -> None:
+        text = "---not-frontmatter\ntitle: Keep me\n---\n# Body\n"
+        result, status = self.m.ensure_frontmatter(text, "TASKS.md")
+        self.assertEqual(status, "added")
+        self.assertIn(text, result)
 
 
 if __name__ == "__main__":

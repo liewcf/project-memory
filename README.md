@@ -94,21 +94,27 @@ Run it from the root of the project where you want memory files created.
 
 ## Validate
 
-Run the regression tests:
+Run both shipped unittest suites for a complete check:
 
 ```bash
-python3 -m unittest discover -s tests -p "test_*.py"
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p "test_*.py"
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s project-memory/tests -p "test_*.py"
 ```
 
-Check the setup script parses:
+Check all bundled scripts parse without writing bytecode into the repository:
 
 ```bash
-PYTHONPYCACHEPREFIX=/tmp/project-memory-pycache python3 -m py_compile project-memory/scripts/setup_project_memory.py
+PYTHONPYCACHEPREFIX=/tmp/project-memory-pycache python3 -m py_compile project-memory/scripts/*.py
 ```
 
 ## Metadata Hygiene
 
 Memory files under `docs/` carry Project Memory Metadata v1 YAML frontmatter (title, doc_type, status, dates, tags, audience, related). `AGENTS.md` stays plain Markdown without frontmatter. The Markdown body remains the source of truth.
+
+Metadata v1 intentionally supports only scalar `key: value` fields and indented
+`- item` lists. Flow mappings, flow sequences, nested YAML, and other
+unsupported frontmatter lines are rejected. Repair skips unsupported
+frontmatter instead of silently converting or discarding it.
 
 Validate metadata:
 
@@ -137,6 +143,7 @@ project-memory/
   scripts/metadata_frontmatter.py
   scripts/metadata_repair.py
   scripts/metadata_validation.py
+  scripts/path_safety.py
   scripts/setup_project_memory.py
   scripts/validate_metadata.py
   scripts/repair_metadata.py
@@ -153,6 +160,11 @@ The root-level `AGENTS.md` is the only root project memory file. `docs/PROJECT_C
 ## Safety
 
 Do not store secrets, credentials, API keys, private tokens, database dumps, or sensitive personal data in project memory files.
+
+Metadata repair uses descriptor-relative no-follow operations when the runtime
+exposes the required POSIX primitives. If those race-safe primitives are
+unavailable, repair exits with an explicit error instead of falling back to an
+unsafe path-based write.
 
 ## License
 

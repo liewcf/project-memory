@@ -4,14 +4,13 @@ from __future__ import annotations
 
 from metadata_defaults import (
     ALLOWED_AUDIENCES,
-    ALLOWED_DOC_TYPES,
     ALLOWED_STATUSES,
     LIST_FIELDS,
     expected_metadata,
     today,
 )
 from metadata_frontmatter import parse_frontmatter, render_frontmatter
-from metadata_validation import DATE_RE
+from metadata_validation import is_iso_date
 
 
 def repair_metadata(
@@ -44,7 +43,7 @@ def _repair_scalar_fields(
         if field not in repaired or repaired[field] is None:
             repaired[field] = defaults[field]
             changed = True
-        elif field == "doc_type" and repaired[field] not in ALLOWED_DOC_TYPES:
+        elif field == "doc_type" and repaired[field] != defaults[field]:
             repaired[field] = defaults[field]
             changed = True
         elif field == "status" and repaired[field] not in ALLOWED_STATUSES:
@@ -61,14 +60,12 @@ def _repair_dates(
 ) -> bool:
     date_changed = False
     created_val = repaired.get("created")
-    if created_val is None or not DATE_RE.match(str(created_val)):
+    if not is_iso_date(created_val):
         repaired["created"] = today_str
         date_changed = True
 
     updated_val = repaired.get("updated")
-    updated_invalid = updated_val is None or not DATE_RE.match(
-        str(updated_val)
-    )
+    updated_invalid = not is_iso_date(updated_val)
     if updated_invalid:
         repaired["updated"] = today_str
         date_changed = True

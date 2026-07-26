@@ -16,6 +16,13 @@ MEMORY_FILES: tuple[str, ...] = (
     "CHANGELOG_WORK.md",
 )
 
+EXPECTED_DOC_TYPES: dict[str, str] = {
+    "PROJECT_CONTEXT.md": "context",
+    "DECISIONS.md": "decision_log",
+    "TASKS.md": "task_state",
+    "CHANGELOG_WORK.md": "work_log",
+}
+
 REQUIRED_FIELDS: tuple[str, ...] = (
     "title",
     "description",
@@ -62,7 +69,7 @@ def expected_metadata(filename: str) -> dict[str, object]:
         "PROJECT_CONTEXT.md": {
             "title": "Project Context",
             "description": "Stable project facts, structure, workflows, resources, and constraints.",
-            "doc_type": "context",
+            "doc_type": EXPECTED_DOC_TYPES["PROJECT_CONTEXT.md"],
             "status": "stable",
             "created": current_date,
             "updated": current_date,
@@ -76,7 +83,7 @@ def expected_metadata(filename: str) -> dict[str, object]:
                 "Important project, product, technical, process, or content "
                 "decisions with rationale and consequences."
             ),
-            "doc_type": "decision_log",
+            "doc_type": EXPECTED_DOC_TYPES["DECISIONS.md"],
             "status": "active",
             "created": current_date,
             "updated": current_date,
@@ -87,7 +94,7 @@ def expected_metadata(filename: str) -> dict[str, object]:
         "TASKS.md": {
             "title": "Current Tasks",
             "description": "Current tasks, blockers, verification state, and recommended next actions.",
-            "doc_type": "task_state",
+            "doc_type": EXPECTED_DOC_TYPES["TASKS.md"],
             "status": "active",
             "created": current_date,
             "updated": current_date,
@@ -98,7 +105,7 @@ def expected_metadata(filename: str) -> dict[str, object]:
         "CHANGELOG_WORK.md": {
             "title": "Work Changelog",
             "description": "Dated notes on changed files, deliverables, tooling, checks, and verification.",
-            "doc_type": "work_log",
+            "doc_type": EXPECTED_DOC_TYPES["CHANGELOG_WORK.md"],
             "status": "active",
             "created": current_date,
             "updated": current_date,

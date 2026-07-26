@@ -16,6 +16,7 @@
 - **Depends on**: `plans/001-verification-baseline.md`
 - **Category**: correctness, tech-debt, docs
 - **Planned at**: commit `0766747`, 2026-07-14
+- **Execution status**: DONE — verified in the 2026-07-27 worktree
 
 ## Why this matters
 
@@ -116,11 +117,11 @@ order.
 
 ## Done criteria
 
-- [ ] Only exact opening delimiters are accepted.
-- [ ] Unknown non-blank metadata lines fail closed.
-- [ ] README states the actual supported subset.
-- [ ] Existing valid metadata round-trips unchanged.
-- [ ] All targeted and full checks pass; only in-scope files change.
+- [x] Only exact opening delimiters are accepted.
+- [x] Unknown non-blank metadata lines fail closed.
+- [x] README states the actual supported subset.
+- [x] Existing valid metadata round-trips unchanged.
+- [x] All targeted and full checks pass; Plan 003 changes stay in scope.
 
 ## STOP conditions
 

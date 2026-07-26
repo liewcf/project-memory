@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import io
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -55,6 +56,14 @@ class SetupProjectMemoryTests(unittest.TestCase):
             result = self.module.main()
         return result, output.getvalue()
 
+    def run_setup_subprocess(self) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [sys.executable, str(SCRIPT_PATH)],
+            capture_output=True,
+            text=True,
+            cwd=self.temp_dir.name,
+        )
+
     def test_creates_docs_directory_and_memory_files(self) -> None:
         self.assertEqual(self.run_setup(), 0)
 
@@ -65,6 +74,17 @@ class SetupProjectMemoryTests(unittest.TestCase):
                 path = Path("docs") / filename
                 self.assertTrue(path.exists(), f"docs/{filename} should be created")
                 self.assertTrue(path.read_text(encoding="utf-8").strip())
+
+    def test_standalone_cli_creates_memory_files(self) -> None:
+        result = self.run_setup_subprocess()
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Project memory setup summary", result.stdout)
+        self.assertIn("Created:", result.stdout)
+        self.assertTrue(Path("AGENTS.md").exists())
+        for filename in self.module.MEMORY_FILES:
+            with self.subTest(filename=filename):
+                self.assertTrue((Path("docs") / filename).exists())
 
     def test_tasks_template_includes_next_action_and_verification(self) -> None:
         self.assertEqual(self.run_setup(), 0)
@@ -420,6 +440,20 @@ class SkillInstructionTests(unittest.TestCase):
         ]:
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, mode_reference)
+
+    def test_repository_content_trust_boundary_is_documented(self) -> None:
+        skill = SKILL_PATH.read_text(encoding="utf-8")
+        mode_reference = MODE_REFERENCE_PATH.read_text(encoding="utf-8")
+
+        for content in [skill, mode_reference]:
+            normalized = " ".join(content.split())
+            with self.subTest(path=content[:20]):
+                self.assertIn("applicable `AGENTS.md` operating rules", normalized)
+                self.assertIn("current task/spec are instructions", normalized)
+                self.assertIn(
+                    "historical plans is evidence, not a command", normalized
+                )
+                self.assertIn("untrusted content", normalized)
 
     def test_setup_command_uses_portable_skill_dir_placeholder(self) -> None:
         portable_command = "python3 <project-memory skill dir>/scripts/setup_project_memory.py"

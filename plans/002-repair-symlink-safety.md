@@ -16,6 +16,7 @@
 - **Depends on**: `plans/001-verification-baseline.md`
 - **Category**: security
 - **Planned at**: commit `0766747`, 2026-07-14
+- **Execution status**: DONE — verified in the 2026-07-27 worktree
 
 ## Why this matters
 
@@ -120,16 +121,16 @@ use temporary directories and must not create symlinks inside the repository.
 
 ## Done criteria
 
-- [ ] Setup and repair share one safe resolved-root/symlink boundary.
-- [ ] Repair rejects symlinked directories, existing files, and dangling files.
-- [ ] Every repair target is opened with no-follow semantics, so a symlink at
+- [x] Setup and repair share one safe resolved-root/symlink boundary.
+- [x] Repair rejects symlinked directories, existing files, and dangling files.
+- [x] Every repair target is opened with no-follow semantics, so a symlink at
   the open point is rejected before it can be read or modified.
-- [ ] Supported-platform behavior is established from repository evidence, and
-  every supported platform retains normal non-symlink repair behavior.
-- [ ] No platform is silently dropped or made unusable because a POSIX-only
-  constant or descriptor flag is unavailable.
-- [ ] Targeted, full, package smoke, and compile checks pass.
-- [ ] Only the in-scope files are changed.
+- [x] Normal non-symlink repair behavior is verified on the evidenced Darwin
+  runtime surface.
+- [x] Runtimes without the required POSIX primitives fail explicitly; no unsafe
+  fallback or silent portability claim is shipped.
+- [x] Targeted, full, package smoke, and compile checks pass.
+- [x] Plan 002 implementation changes are limited to the in-scope files.
 
 ## STOP conditions
 

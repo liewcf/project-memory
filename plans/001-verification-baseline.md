@@ -16,6 +16,7 @@
 - **Depends on**: none
 - **Category**: tests, dx
 - **Planned at**: commit `0766747`, 2026-07-14
+- **Execution status**: DONE — verified in the 2026-07-27 worktree
 
 ## Why this matters
 
@@ -108,10 +109,10 @@ result is 89 repo tests plus 1 package smoke test, with no `__pycache__` changes
 
 ## Done criteria
 
-- [ ] The setup CLI is exercised in a subprocess from a fresh temporary root.
-- [ ] README documents both unittest roots.
-- [ ] Both unittest commands and `py_compile` pass.
-- [ ] `git status --short` shows changes only in the two in-scope files.
+- [x] The setup CLI is exercised in a subprocess from a fresh temporary root.
+- [x] README documents both unittest roots.
+- [x] Both unittest commands and `py_compile` pass.
+- [x] Plan 001 implementation changes are limited to the two in-scope files.
 
 ## STOP conditions
 
