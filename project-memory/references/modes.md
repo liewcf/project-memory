@@ -15,8 +15,10 @@ If project memory does not exist yet, recommend `$project-memory setup` or conti
 
 ## Setup
 
+- Before running setup, inspect any existing `## Project Memory Requirement` section in `AGENTS.md`. The script replaces the whole section when required phrases are missing.
+- If that section needs refreshing and contains project-specific guidance, merge the current `AGENTS_REQUIREMENT` from the setup script with that guidance using targeted edits first. Preserve custom content and verify the section satisfies `AGENTS_REQUIREMENT_REQUIRED_PHRASES`, so the script leaves it unchanged.
 - Run the bundled setup script from the target project root.
-- The script creates missing memory files, preserves existing files, migrates legacy root files when safe, and refreshes the `AGENTS.md` memory requirement. It initializes structure only and does not infer project facts.
+- The script creates missing memory files, preserves existing docs memory files, migrates legacy root files when safe, and refreshes the `AGENTS.md` memory requirement after the preflight above. It initializes structure only and does not infer project facts.
 - Summarize created, updated, existing, migrated, unchanged, and left-in-place files.
 - For existing projects with meaningful files or history, recommend `$project-memory update` next.
 - If asked to set up and populate memory, run setup then update unless setup-only was requested.
@@ -99,12 +101,13 @@ Use `repair` to fix structure while preserving history:
 
 Repair missing or invalid Project Memory Metadata v1 frontmatter in docs memory files. Preserve Markdown body content. Keep `AGENTS.md` plain Markdown.
 
-Scripts for metadata repair:
+Run the default metadata repair from the target project root:
 
 ```bash
 python3 <project-memory skill dir>/scripts/repair_metadata.py
-python3 <project-memory skill dir>/scripts/repair_metadata.py --touch
 ```
+
+Add `--touch` only when the user requests refreshing `updated` dates even for otherwise unchanged metadata. It is an alternative invocation, not a second repair step.
 
 Do not silently delete historical context. Move possibly useful obsolete content to an archive section or mark it historical.
 
