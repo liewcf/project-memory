@@ -8,7 +8,7 @@ Before substantial work, read existing memory before acting:
 
 1. Confirm the project root.
 2. Read `AGENTS.md` for operating rules, then `docs/TASKS.md` for current state and blockers and `docs/PROJECT_CONTEXT.md` for stable facts. Read `docs/DECISIONS.md` and `docs/CHANGELOG_WORK.md` when they matter for the task.
-3. Read source-of-truth files referenced in memory when they matter for the task.
+3. Read source-of-truth files referenced in memory when they matter for the task. Recheck drift-prone prerequisites before resuming a saved next action; treat access, service, process and checkout states as last-known observations.
 4. Briefly summarize the relevant context before acting.
 
 If project memory does not exist yet, recommend `$project-memory setup` or continue normally. Do not create memory at the start unless the user asks.
@@ -48,6 +48,20 @@ Avoid turning `docs/TASKS.md` or `docs/CHANGELOG_WORK.md` into a transcript.
 
 When durable content changes, update the `updated` field and preserve meaningful metadata.
 
+### Evidence and Resumable State
+
+- Tie material results to the relevant target (project/checkout, version/artifact or environment), observation date and evidence link or locator. Include only identifying details that affect the claim; a memory edit date does not mean a check was rerun.
+- Distinguish work completed, checks passed, checks pending, accepted limitations and actions awaiting authorization. Keep acceptance tied to its stated scope and conditions; it does not authorize execution or carry over automatically to another target.
+- Reconcile contradictory findings against current evidence for the same target. Revise the current summary, mark superseded conclusions historical and point to replacement evidence. A newer result for a different target does not supersede the older one. Inspect other chats only when requested or provided.
+- Give the next action its prerequisites and authorization boundary when relevant. Saving a proposed action does not start it or grant permission. If authorized work is complete, say so rather than inventing more work.
+
+### Worked Examples
+
+- **Partial verification:** A version 2 artifact passes local checks, while the integration fixture still uses version 1. Record the local pass for version 2 and the integration gap separately; do not call version 2 fully verified.
+- **Superseded result:** An early note says a release is blocked. Later evidence confirms that same release was deployed and public checks passed. Replace the current blocked summary, retain a historical pointer and keep untested authenticated flows open.
+- **Safe next action:** A process was stuck yesterday. Record when it was last observed and recommend a fresh permitted check before deciding on cleanup; do not assume it remains stuck or that a shared-service restart is authorized.
+- **Compaction:** Shorten a long completed-work log while retaining the current outcome, unresolved checks, accepted limitations, permission boundaries and evidence links. Link a dated historical archive if useful; do not turn missing evidence into a pass.
+
 ### AGENTS.md Updates
 
 During `update`, do a quick check for whether `AGENTS.md` needs new or revised future-agent guidance. Edit `AGENTS.md` only when current evidence supports a durable operating rule.
@@ -76,6 +90,8 @@ Check Project Memory Metadata v1 frontmatter. Recommend `$project-memory repair`
 
 Verify cheap local evidence before reporting drift-prone claims such as branch sync, CI, published state, current commands, or deliverable status.
 
+Apply `Evidence and Resumable State` above when assessing result scope, superseded findings and whether next actions can safely resume.
+
 ## Status
 
 Use `status` to summarize:
@@ -87,7 +103,7 @@ Use `status` to summarize:
 - Blockers or risks.
 - Recommended next action, and whether it is confirmed or inferred.
 
-Label absent, stale, or inferred facts.
+Label absent, stale, or inferred facts. Use `Evidence and Resumable State` above to distinguish completion, verification and authorization.
 
 ## Repair
 
@@ -124,6 +140,8 @@ Use `compact` when memory files are noisy or too long:
 Preserve Project Memory Metadata v1 frontmatter. Compact only the body unless metadata is stale or invalid.
 
 Prefer reducing repetition over removing information. Keep enough context for a future Codex session to continue safely.
+
+Compare the result with the original before finishing: retain unresolved risks, failed or unverified checks, dependencies, accepted limitations, authorization boundaries and evidence pointers. Keep current summaries actionable; clearly label archived material historical. Verify archive links and preservation when creating a separate dated archive.
 
 Recommend compaction when:
 
