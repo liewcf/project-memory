@@ -13,6 +13,7 @@ venv/
 /docs/DECISIONS.md
 /docs/TASKS.md
 /docs/CHANGELOG_WORK.md
+/docs/PROJECT_MEMORY_ARCHIVE_*.md
 
 # Transitional legacy root paths; keep ignored during docs/ migration.
 /PROJECT_CONTEXT.md
