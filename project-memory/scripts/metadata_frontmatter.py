@@ -116,7 +116,7 @@ def _append_list_value(
 
 
 def _parse_key_value(raw_line: str) -> tuple[str, str] | None:
-    kv_match = re.match(r"^(\w[\w-]*)[ \t]*:[ \t]*(.*)$", raw_line)
+    kv_match = re.match(r"^(\w[\w-]*)[ \t]*:(?=[ \t]|$)[ \t]*(.*)$", raw_line)
     if not kv_match:
         return None
     return kv_match.group(1), kv_match.group(2).strip(" \t")

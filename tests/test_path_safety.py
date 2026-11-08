@@ -30,6 +30,59 @@ class AtomicWriteTests(unittest.TestCase):
     def write(self, text: str, *, create: bool) -> None:
         path_safety.write_text_at(self.fd, "TASKS.md", "TASKS.md", text, create=create)
 
+    def test_read_version_allows_an_unchanged_replacement(self) -> None:
+        target = self.root / "TASKS.md"
+        target.write_text("original", encoding="utf-8")
+        text, version = path_safety.read_text_with_version_at(self.fd, "TASKS.md", "TASKS.md")
+        self.assertEqual(text, "original")
+        path_safety.write_text_at(
+            self.fd, "TASKS.md", "TASKS.md", text + " updated",
+            create=False, expected_version=version,
+        )
+        self.assertEqual(target.read_text(encoding="utf-8"), "original updated")
+
+    def test_read_refuses_a_file_changed_during_read(self) -> None:
+        target = self.root / "TASKS.md"
+        target.write_text("original", encoding="utf-8")
+        original_fdopen = os.fdopen
+
+        @contextmanager
+        def editing_reader(*args, **kwargs):
+            with original_fdopen(*args, **kwargs) as handle:
+                class Reader:
+                    def read(self):
+                        text = handle.read()
+                        target.write_text("concurrent longer edit", encoding="utf-8")
+                        return text
+
+                yield Reader()
+
+        with mock.patch.object(path_safety.os, "fdopen", editing_reader):
+            with self.assertRaisesRegex(path_safety.UnsafeProjectPath, "changed during read"):
+                path_safety.read_text_with_version_at(self.fd, "TASKS.md", "TASKS.md")
+        self.assertEqual(target.read_text(encoding="utf-8"), "concurrent longer edit")
+
+    def test_read_version_refuses_same_size_edits_and_permission_changes(self) -> None:
+        target = self.root / "TASKS.md"
+        for change in ("same-size edit", "permissions"):
+            with self.subTest(change=change):
+                target.write_text("original", encoding="utf-8")
+                target.chmod(0o600)
+                _text, version = path_safety.read_text_with_version_at(self.fd, "TASKS.md", "TASKS.md")
+                if change == "same-size edit":
+                    target.write_text("modified", encoding="utf-8")
+                else:
+                    target.chmod(0o640)
+                before = target.stat()
+                with self.assertRaisesRegex(path_safety.UnsafeProjectPath, "changed since read"):
+                    path_safety.write_text_at(
+                        self.fd, "TASKS.md", "TASKS.md", "stale replacement",
+                        create=False, expected_version=version,
+                    )
+                self.assertEqual(target.read_text(encoding="utf-8"), "modified" if change == "same-size edit" else "original")
+                self.assertEqual(stat.S_IMODE(target.stat().st_mode), stat.S_IMODE(before.st_mode))
+                self.assertEqual(list(self.root.iterdir()), [target])
+
     def test_failed_write_preserves_existing_or_missing_target(self) -> None:
         original_fdopen = os.fdopen
 

@@ -27,7 +27,7 @@ from path_safety import (
     PublishedCleanupError,
     UnsafeProjectPath,
     open_project_directory,
-    read_text_at,
+    read_text_with_version_at,
     write_text_at,
 )
 
@@ -61,7 +61,7 @@ def main() -> int:
             rel = f"docs/{filename}"
 
             try:
-                text = read_text_at(docs_fd, filename, rel)
+                text, version = read_text_with_version_at(docs_fd, filename, rel)
             except FileNotFoundError:
                 fm = render_frontmatter(expected_metadata(filename))
                 body = default_body(filename)
@@ -107,6 +107,7 @@ def main() -> int:
                     rel,
                     updated_text,
                     create=False,
+                    expected_version=version,
                 )
             except PublishedCleanupError as exc:
                 print(f"PUBLISHED: {rel} (temporary-file cleanup failed: {exc.cleanup_error}; retained name: {exc.temporary_name})")

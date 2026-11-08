@@ -121,6 +121,8 @@ Metadata v1 intentionally supports only scalar `key: value` fields and indented
 `- item` lists. Flow mappings, flow sequences, nested YAML, and other
 unsupported frontmatter lines are rejected. Repair skips unsupported
 frontmatter instead of silently converting or discarding it.
+Mapping colons require whitespace before a value; bare `key:` fields remain
+supported. Lines such as `title:Roadmap` are rejected.
 
 Quoted scalars support JSON-compatible double-quoted escapes and doubled single
 quotes. Rendering quotes ambiguous scalar and list-item values; repair reparses
@@ -141,8 +143,10 @@ or publication preserves the previous destination. Existing ownership,
 permission bits, ACLs and extended attributes are retained through descriptors
 on macOS and Linux; failure to preserve metadata stops publication. Atomic
 replacement creates a new inode, so hard-linked aliases retain their original
-contents. These are per-file guarantees, not a
-transaction across every file or a lock against concurrent writers. See the
+contents. Repair and AGENTS refresh carry the file version captured during
+reading into publication and refuse detected intervening edits or replacements.
+Changes detected during a read also stop that operation. These are per-file
+guarantees, not a transaction across every file or a lock against concurrent writers. See the
 [state transition reference](project-memory/references/state-transitions.md).
 
 On macOS, copying metadata replaces the staging file's ACL exactly, clearing

@@ -18,6 +18,30 @@ def parse(block):
 
 
 class ScalarBoundariesTests(unittest.TestCase):
+    def test_mapping_colon_requires_value_separation(self):
+        for line in ("title:Roadmap", 'title:"Roadmap"', "custom:#comment"):
+            with self.subTest(line=line), self.assertRaises(ValueError):
+                parse(line)
+
+    def test_mapping_separation_retains_empty_fields_and_literal_colons(self):
+        self.assertEqual(
+            parse("empty:\nspaces:  \ntabs:\tvalue\nlink: https://example.test/a:b"),
+            {"empty": None, "spaces": None, "tabs": "value", "link": "https://example.test/a:b"},
+        )
+
+    def test_cli_rejects_mapping_without_separation_and_preserves_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repair = [sys.executable, str(SCRIPTS / "repair_metadata.py"), "--root", str(root)]
+            self.assertEqual(subprocess.run(repair, capture_output=True).returncode, 0)
+            path = root / "docs" / "TASKS.md"
+            original = path.read_text(encoding="utf-8").replace("title: Current Tasks", "title:Roadmap")
+            path.write_text(original, encoding="utf-8")
+            validate = [sys.executable, str(SCRIPTS / "validate_metadata.py"), "--root", str(root)]
+            self.assertEqual(subprocess.run(validate, capture_output=True).returncode, 1)
+            self.assertEqual(subprocess.run(repair + ["--touch"], capture_output=True).returncode, 1)
+            self.assertEqual(path.read_text(encoding="utf-8"), original)
+
     def test_inline_comments_and_literal_hashes(self):
         block = r'''plain: It's a "fine" day # comment
 hash: issue#123

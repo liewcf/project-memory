@@ -16,6 +16,7 @@ from file_metadata import copy_file_metadata
 
 _DIR_FD_OPERATIONS = (os.open, os.stat, os.rename, os.link, os.unlink)
 _NOFOLLOW_OPERATIONS = (os.stat, os.link)
+FileVersion = tuple[int, int, int, int, int]
 
 
 class UnsafeProjectPath(RuntimeError):
@@ -137,12 +138,24 @@ def open_project_file(
 
 def read_text_at(directory_fd: int, filename: str, relative_path: str) -> str:
     """Read UTF-8 text relative to an already-open safe directory."""
+    text, _version = read_text_with_version_at(directory_fd, filename, relative_path)
+    return text
+
+
+def read_text_with_version_at(
+    directory_fd: int, filename: str, relative_path: str
+) -> tuple[str, FileVersion]:
+    """Read text and its version, refusing changes during the read."""
     with open_project_file(directory_fd, filename, relative_path) as descriptor:
+        version = file_version(os.fstat(descriptor))
         with os.fdopen(descriptor, "r", encoding="utf-8", closefd=False) as handle:
-            return handle.read()
+            text = handle.read()
+        if file_version(os.fstat(descriptor)) != version:
+            raise UnsafeProjectPath(f"Project memory file changed during read: {relative_path}")
+        return text, version
 
 
-def file_version(info: os.stat_result) -> tuple[int, int, int, int, int]:
+def file_version(info: os.stat_result) -> FileVersion:
     """Identify content changes without treating a read's access time as an edit."""
     return info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns
 
@@ -155,10 +168,13 @@ def write_text_at(
     *,
     create: bool,
     metadata_fd: int | None = None,
+    expected_version: FileVersion | None = None,
 ) -> None:
     """Stage complete UTF-8 text, then publish it without following the target.
 
     Creation publishes with an exclusive link; replacement uses atomic rename.
+    Read-modify-write callers pass the read-time version as expected_version;
+    a mismatch is rejected before staging, then checked again before rename.
     Failures before publication leave the destination untouched. This is a
     per-file boundary, not a transaction across a whole setup or repair run.
     """
@@ -168,14 +184,21 @@ def write_text_at(
             metadata_fd = stack.enter_context(
                 open_project_file(directory_fd, filename, relative_path, writable=True)
             )
-        _stage_and_publish(directory_fd, filename, relative_path, text, create, metadata_fd)
+        _stage_and_publish(
+            directory_fd, filename, relative_path, text, create, metadata_fd,
+            expected_version,
+        )
 
 
 def _stage_and_publish(
     directory_fd: int, filename: str, relative_path: str, text: str,
-    create: bool, metadata_fd: int | None,
+    create: bool, metadata_fd: int | None, expected_version: FileVersion | None,
 ) -> None:
     previous = os.fstat(metadata_fd) if metadata_fd is not None else None
+    if expected_version is not None and (
+        previous is None or file_version(previous) != expected_version
+    ):
+        raise UnsafeProjectPath(f"Project memory file changed since read: {relative_path}")
     temporary = f".{filename}.{uuid4().hex}.tmp"
     descriptor = os.open(
         temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
@@ -234,8 +257,14 @@ def _stage_and_publish(
                 raise
 
 
-def write_project_text(root: Path, path: Path, text: str, *, create: bool) -> None:
+def write_project_text(
+    root: Path, path: Path, text: str, *, create: bool,
+    expected_version: FileVersion | None = None,
+) -> None:
     """Use the same publication boundary for setup's project-relative writes."""
     path = ensure_safe_project_path(root, path)
     with open_project_directory(root, path.parent.relative_to(root)) as directory_fd:
-        write_text_at(directory_fd, path.name, str(path.relative_to(root)), text, create=create)
+        write_text_at(
+            directory_fd, path.name, str(path.relative_to(root)), text,
+            create=create, expected_version=expected_version,
+        )

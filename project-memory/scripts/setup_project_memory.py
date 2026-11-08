@@ -30,6 +30,7 @@ from path_safety import (
     open_project_directory,
     open_project_file,
     read_text_at,
+    read_text_with_version_at,
     write_project_text,
     write_text_at,
 )
@@ -188,7 +189,9 @@ def has_project_memory_requirement(content: str) -> bool:
 def ensure_agents_requirement(root: Path, path: Path) -> str:
     path = ensure_safe_project_path(root, path)
     with open_project_directory(root, path.parent.relative_to(root)) as directory_fd:
-        content = read_text_at(directory_fd, path.name, str(path.relative_to(root)))
+        content, version = read_text_with_version_at(
+            directory_fd, path.name, str(path.relative_to(root))
+        )
     if has_project_memory_requirement(content):
         return "unchanged"
 
@@ -196,12 +199,15 @@ def ensure_agents_requirement(root: Path, path: Path) -> str:
         updated = AGENTS_REQUIREMENT_PATTERN.sub(
             f"{AGENTS_REQUIREMENT.rstrip()}\n\n", content.rstrip(), count=1
         )
-        write_project_text(root, path, f"{updated.rstrip()}\n", create=False)
+        write_project_text(
+            root, path, f"{updated.rstrip()}\n", create=False,
+            expected_version=version,
+        )
         return "updated"
 
     separator = "\n\n" if content.rstrip() else ""
     updated = f"{content.rstrip()}{separator}{AGENTS_REQUIREMENT}\n"
-    write_project_text(root, path, updated, create=False)
+    write_project_text(root, path, updated, create=False, expected_version=version)
     return "updated"
 
 
