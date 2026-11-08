@@ -139,6 +139,30 @@ class ParseFrontmatterTests(unittest.TestCase):
         self.assertEqual(body, text)
         self.assertFalse(had_fm)
 
+    def test_unterminated_frontmatter_is_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "closing delimiter"):
+            self.m.parse_frontmatter("---\ntitle: Keep me\n# Body\n")
+
+    def test_duplicate_keys_are_rejected(self) -> None:
+        for first_value in ("first", "\n  - first"):
+            with self.subTest(first_value=first_value):
+                with self.assertRaisesRegex(ValueError, "Duplicate.*title"):
+                    self.m.parse_frontmatter(
+                        f"---\ntitle: {first_value}\ntitle: second\n---\nBody\n"
+                    )
+
+    def test_list_cannot_replace_scalar(self) -> None:
+        with self.assertRaisesRegex(ValueError, "list.*scalar"):
+            self.m.parse_frontmatter("---\ntitle: Keep me\n  - lost\n---\n")
+
+    def test_list_requires_a_key(self) -> None:
+        with self.assertRaises(ValueError):
+            self.m.parse_frontmatter("---\n  - orphan\n---\n")
+
+    def test_nested_list_indentation_is_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "nested"):
+            self.m.parse_frontmatter("---\ntags:\n  - one\n    - two\n---\n")
+
     def test_rejects_unrecognized_top_level_line(self) -> None:
         text = "---\ntitle: Test\nnot valid yaml\n---\nBody\n"
         with self.assertRaisesRegex(ValueError, "unrecognized top-level line"):

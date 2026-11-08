@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from contextlib import redirect_stdout
 from pathlib import Path
 
@@ -253,6 +254,61 @@ or sensitive personal data in project memory.
                 self.assertFalse(legacy_path.exists(), f"Root {filename} should be migrated")
                 self.assertTrue(docs_path.exists(), f"docs/{filename} should exist after migration")
                 self.assertIn(f"Legacy {filename}", docs_path.read_text(encoding="utf-8"))
+
+    def test_invalid_legacy_frontmatter_is_not_moved(self) -> None:
+        original = "---\ntitle: Legacy\nunsupported syntax\n---\nBody\n"
+        Path("TASKS.md").write_text(original, encoding="utf-8")
+
+        with self.assertRaises(ValueError):
+            self.run_setup()
+
+        self.assertEqual(Path("TASKS.md").read_text(encoding="utf-8"), original)
+        self.assertFalse(Path("docs/TASKS.md").exists())
+
+    def test_failed_migration_publication_keeps_legacy_source(self) -> None:
+        original = "# Legacy tasks\n"
+        Path("TASKS.md").write_text(original, encoding="utf-8")
+        with mock.patch.object(self.module, "write_text_at", side_effect=OSError("write failed")):
+            with self.assertRaisesRegex(OSError, "write failed"):
+                self.run_setup()
+        self.assertEqual(Path("TASKS.md").read_text(encoding="utf-8"), original)
+        self.assertFalse(Path("docs/TASKS.md").exists())
+
+    def test_migration_preserves_private_permissions(self) -> None:
+        Path("TASKS.md").write_text("# Private tasks\n", encoding="utf-8")
+        Path("TASKS.md").chmod(0o600)
+        self.run_setup()
+        self.assertEqual(Path("docs/TASKS.md").stat().st_mode & 0o777, 0o600)
+
+    def test_failed_source_removal_leaves_both_copies_for_recovery(self) -> None:
+        original = "# Legacy tasks\n"
+        Path("TASKS.md").write_text(original, encoding="utf-8")
+        original_unlink = os.unlink
+
+        def fail_source_removal(path, **kwargs):
+            if path == "TASKS.md":
+                raise PermissionError("cannot remove source")
+            return original_unlink(path, **kwargs)
+
+        with mock.patch.object(os, "unlink", side_effect=fail_source_removal):
+            with self.assertRaisesRegex(PermissionError, "cannot remove source"):
+                self.run_setup()
+        self.assertEqual(Path("TASKS.md").read_text(encoding="utf-8"), original)
+        self.assertIn(original, Path("docs/TASKS.md").read_text(encoding="utf-8"))
+        result, output = self.run_setup_with_output()
+        self.assertEqual(result, 0)
+        self.assertIn("Legacy root files left in place: TASKS.md", output)
+
+    def test_unsafe_agents_path_is_rejected_before_migration(self) -> None:
+        original = "# Legacy tasks\n"
+        Path("TASKS.md").write_text(original, encoding="utf-8")
+        Path("AGENTS.md").symlink_to(Path("missing-agents.md"))
+
+        with self.assertRaisesRegex(RuntimeError, "symlinked"):
+            self.run_setup()
+
+        self.assertEqual(Path("TASKS.md").read_text(encoding="utf-8"), original)
+        self.assertFalse(Path("docs").exists())
 
     def test_does_not_overwrite_existing_docs_files(self) -> None:
         docs_dir = Path("docs")

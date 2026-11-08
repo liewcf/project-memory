@@ -2,9 +2,17 @@
 
 from __future__ import annotations
 
+from enum import Enum, auto
 import re
 
 from metadata_defaults import REQUIRED_FIELDS
+
+
+class _FieldState(Enum):
+    NO_KEY = auto()
+    EMPTY = auto()
+    SCALAR = auto()
+    LIST = auto()
 
 
 def parse_frontmatter(
@@ -19,7 +27,7 @@ def parse_frontmatter(
 
     match = re.compile(r"^---[ \t]*$", re.MULTILINE).search(rest)
     if match is None:
-        return {}, text, False
+        raise ValueError("Unterminated YAML frontmatter: missing closing delimiter")
 
     yaml_block = rest[: match.start()]
     body = rest[match.end() :]
@@ -33,25 +41,41 @@ def _parse_yaml_block(block: str) -> dict[str, object]:
     result: dict[str, object] = {}
     current_key: str | None = None
     current_list: list[str] | None = None
+    state = _FieldState.NO_KEY
+    list_indent: str | None = None
 
     for raw_line in block.split("\n"):
         if _is_ignored_yaml_line(raw_line):
             continue
 
         list_value = _parse_list_item(raw_line)
-        if list_value is not None and current_key is not None:
+        if list_value is not None:
+            if state is _FieldState.NO_KEY:
+                raise ValueError("Unsupported YAML list without a key")
+            if state is _FieldState.SCALAR:
+                raise ValueError("Unsupported YAML list after a scalar value")
+            indent = raw_line[: len(raw_line) - len(raw_line.lstrip(" \t"))]
+            if state is _FieldState.LIST and indent != list_indent:
+                raise ValueError("Unsupported nested YAML list indentation")
+            assert current_key is not None
             current_list = _append_list_value(
                 result, current_key, current_list, list_value
             )
+            state = _FieldState.LIST
+            list_indent = indent
             continue
 
         parsed_pair = _parse_key_value(raw_line)
         if parsed_pair is not None:
             current_key, raw_value = parsed_pair
+            if current_key in result:
+                raise ValueError(f"Duplicate YAML key: {current_key}")
             result[current_key] = _normalize_scalar_value(
                 current_key, raw_value
             )
             current_list = None
+            list_indent = None
+            state = _FieldState.EMPTY if raw_value == "" else _FieldState.SCALAR
             continue
 
         _reject_nested_yaml(raw_line, current_key)

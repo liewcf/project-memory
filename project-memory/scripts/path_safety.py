@@ -2,11 +2,19 @@
 
 from __future__ import annotations
 
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 import errno
 import os
 from pathlib import Path
+import stat
 from typing import Iterator
+from uuid import uuid4
+
+from file_metadata import copy_file_metadata
+
+
+_DIR_FD_OPERATIONS = (os.open, os.stat, os.rename, os.link, os.unlink)
+_NOFOLLOW_OPERATIONS = (os.stat, os.link)
 
 
 class UnsafeProjectPath(RuntimeError):
@@ -38,7 +46,8 @@ def descriptor_safety_supported() -> bool:
     return (
         hasattr(os, "O_NOFOLLOW")
         and hasattr(os, "O_DIRECTORY")
-        and os.open in os.supports_dir_fd
+        and all(operation in os.supports_dir_fd for operation in _DIR_FD_OPERATIONS)
+        and all(operation in os.supports_follow_symlinks for operation in _NOFOLLOW_OPERATIONS)
     )
 
 
@@ -79,22 +88,39 @@ def open_project_directory(
         os.close(descriptor)
 
 
-def read_text_at(directory_fd: int, filename: str, relative_path: str) -> str:
-    """Read UTF-8 text relative to an already-open safe directory."""
+@contextmanager
+def open_project_file(
+    directory_fd: int, filename: str, relative_path: str, *, writable: bool = False
+) -> Iterator[int]:
+    """Keep a no-follow regular-file descriptor open until its operation ends."""
     _require_descriptor_safety()
     try:
         descriptor = os.open(
             filename,
-            os.O_RDONLY | os.O_NOFOLLOW,
+            (os.O_RDWR if writable else os.O_RDONLY) | os.O_NOFOLLOW | os.O_NONBLOCK,
             dir_fd=directory_fd,
         )
-    except FileNotFoundError:
-        raise
     except OSError as exc:
         _raise_open_error(relative_path, exc)
 
-    with os.fdopen(descriptor, "r", encoding="utf-8") as handle:
-        return handle.read()
+    try:
+        if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+            raise UnsafeProjectPath(f"Refusing non-regular project memory file: {relative_path}")
+        yield descriptor
+    finally:
+        os.close(descriptor)
+
+
+def read_text_at(directory_fd: int, filename: str, relative_path: str) -> str:
+    """Read UTF-8 text relative to an already-open safe directory."""
+    with open_project_file(directory_fd, filename, relative_path) as descriptor:
+        with os.fdopen(descriptor, "r", encoding="utf-8", closefd=False) as handle:
+            return handle.read()
+
+
+def file_version(info: os.stat_result) -> tuple[int, int, int, int, int]:
+    """Identify content changes without treating a read's access time as an edit."""
+    return info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns
 
 
 def write_text_at(
@@ -104,30 +130,80 @@ def write_text_at(
     text: str,
     *,
     create: bool,
+    metadata_fd: int | None = None,
 ) -> None:
-    """Create or replace UTF-8 text without following the target path."""
+    """Stage complete UTF-8 text, then publish it without following the target.
+
+    Creation publishes with an exclusive link; replacement uses atomic rename.
+    Failures before publication leave the destination untouched. This is a
+    per-file boundary, not a transaction across a whole setup or repair run.
+    """
     _require_descriptor_safety()
-    flags = os.O_WRONLY | os.O_NOFOLLOW
-    if create:
-        flags |= os.O_CREAT | os.O_EXCL
-
-    try:
-        descriptor = os.open(filename, flags, 0o666, dir_fd=directory_fd)
-    except FileExistsError as exc:
-        raise UnsafeProjectPath(
-            f"Refusing to replace unexpected project memory path: {relative_path}"
-        ) from exc
-    except OSError as exc:
-        _raise_open_error(relative_path, exc)
-
-    try:
+    with ExitStack() as stack:
         if not create:
-            os.ftruncate(descriptor, 0)
-        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-            handle.write(text)
-    except BaseException:
+            metadata_fd = stack.enter_context(
+                open_project_file(directory_fd, filename, relative_path, writable=True)
+            )
+        _stage_and_publish(directory_fd, filename, relative_path, text, create, metadata_fd)
+
+
+def _stage_and_publish(
+    directory_fd: int, filename: str, relative_path: str, text: str,
+    create: bool, metadata_fd: int | None,
+) -> None:
+    previous = os.fstat(metadata_fd) if metadata_fd is not None else None
+    temporary = f".{filename}.{uuid4().hex}.tmp"
+    descriptor = os.open(
+        temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+        0o666, dir_fd=directory_fd,
+    )
+
+    try:
         try:
+            default_mode = stat.S_IMODE(os.fstat(descriptor).st_mode)
+            os.fchmod(descriptor, 0o600)
+            handle = os.fdopen(descriptor, "w", encoding="utf-8")
+        except BaseException:
             os.close(descriptor)
-        except OSError:
+            raise
+        with handle as stream:
+            if metadata_fd is not None:
+                copy_file_metadata(metadata_fd, stream.fileno())
+                os.fchmod(stream.fileno(), 0o600)
+            stream.write(text)
+            stream.flush()
+            if metadata_fd is not None:
+                copy_file_metadata(metadata_fd, stream.fileno())
+            else:
+                os.fchmod(stream.fileno(), default_mode)
+            os.fsync(stream.fileno())
+
+        if create:
+            try:
+                os.link(
+                    temporary, filename, src_dir_fd=directory_fd,
+                    dst_dir_fd=directory_fd, follow_symlinks=False,
+                )
+            except FileExistsError as exc:
+                raise UnsafeProjectPath(
+                    f"Refusing to replace unexpected project memory path: {relative_path}"
+                ) from exc
+        else:
+            with open_project_file(directory_fd, filename, relative_path, writable=True) as current_fd:
+                current = os.fstat(current_fd)
+            assert previous is not None
+            if file_version(current) != file_version(previous):
+                raise UnsafeProjectPath(f"Project memory file changed during write: {relative_path}")
+            os.rename(temporary, filename, src_dir_fd=directory_fd, dst_dir_fd=directory_fd)
+    finally:
+        try:
+            os.unlink(temporary, dir_fd=directory_fd)
+        except FileNotFoundError:
             pass
-        raise
+
+
+def write_project_text(root: Path, path: Path, text: str, *, create: bool) -> None:
+    """Use the same publication boundary for setup's project-relative writes."""
+    path = ensure_safe_project_path(root, path)
+    with open_project_directory(root, path.parent.relative_to(root)) as directory_fd:
+        write_text_at(directory_fd, path.name, str(path.relative_to(root)), text, create=create)

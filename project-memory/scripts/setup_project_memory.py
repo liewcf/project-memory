@@ -9,6 +9,8 @@ AGENTS.md memory requirement is added or refreshed when needed.
 from __future__ import annotations
 
 from datetime import date
+from enum import Enum, auto
+import os
 from pathlib import Path
 import re
 
@@ -20,9 +22,31 @@ from metadata import (
     parse_frontmatter,
     render_frontmatter,
 )
-from path_safety import ensure_safe_project_path
+from path_safety import (
+    UnsafeProjectPath,
+    ensure_safe_project_path,
+    file_version,
+    open_project_directory,
+    open_project_file,
+    read_text_at,
+    write_project_text,
+    write_text_at,
+)
 
 LEGACY_ROOT_FILES = MEMORY_FILES
+
+
+class MemoryLocation(Enum):
+    ABSENT = auto()
+    LEGACY_ONLY = auto()
+    DOCS_ONLY = auto()
+    CONFLICT = auto()
+
+
+def memory_location(legacy_path: Path, docs_path: Path) -> MemoryLocation:
+    if legacy_path.exists():
+        return MemoryLocation.CONFLICT if docs_path.exists() else MemoryLocation.LEGACY_ONLY
+    return MemoryLocation.DOCS_ONLY if docs_path.exists() else MemoryLocation.ABSENT
 
 AGENTS_REQUIREMENT_HEADING = "## Project Memory Requirement"
 AGENTS_REQUIREMENT_PATTERN = re.compile(
@@ -151,13 +175,6 @@ def template_for(filename: str) -> str:
     return f"---\n{fm}---\n\n{body}"
 
 
-def read_text(path: Path) -> str:
-    try:
-        return path.read_text(encoding="utf-8")
-    except UnicodeDecodeError:
-        return path.read_text()
-
-
 def has_project_memory_requirement(content: str) -> bool:
     match = AGENTS_REQUIREMENT_PATTERN.search(content)
     if not match:
@@ -169,7 +186,8 @@ def has_project_memory_requirement(content: str) -> bool:
 
 def ensure_agents_requirement(root: Path, path: Path) -> str:
     path = ensure_safe_project_path(root, path)
-    content = read_text(path)
+    with open_project_directory(root, path.parent.relative_to(root)) as directory_fd:
+        content = read_text_at(directory_fd, path.name, str(path.relative_to(root)))
     if has_project_memory_requirement(content):
         return "unchanged"
 
@@ -177,12 +195,12 @@ def ensure_agents_requirement(root: Path, path: Path) -> str:
         updated = AGENTS_REQUIREMENT_PATTERN.sub(
             f"{AGENTS_REQUIREMENT.rstrip()}\n\n", content.rstrip(), count=1
         )
-        path.write_text(f"{updated.rstrip()}\n", encoding="utf-8")
+        write_project_text(root, path, f"{updated.rstrip()}\n", create=False)
         return "updated"
 
     separator = "\n\n" if content.rstrip() else ""
     updated = f"{content.rstrip()}{separator}{AGENTS_REQUIREMENT}\n"
-    path.write_text(updated, encoding="utf-8")
+    write_project_text(root, path, updated, create=False)
     return "updated"
 
 
@@ -192,26 +210,36 @@ def migrate_legacy_files(root: Path) -> tuple[list[str], list[str]]:
     left_in_place: list[str] = []
     docs_dir = ensure_safe_project_path(root, DOCS_DIR)
 
-    docs_dir.mkdir(exist_ok=True)
+    with open_project_directory(root, Path(".")) as root_fd:
+        with open_project_directory(root, DOCS_DIR, create=True) as docs_fd:
+            for filename in LEGACY_ROOT_FILES:
+                legacy_path = ensure_safe_project_path(root, Path(filename))
+                docs_path = ensure_safe_project_path(root, docs_dir / filename)
+                location = memory_location(legacy_path, docs_path)
+                if location is MemoryLocation.CONFLICT:
+                    left_in_place.append(filename)
+                    continue
+                if location is not MemoryLocation.LEGACY_ONLY:
+                    continue
 
-    for filename in LEGACY_ROOT_FILES:
-        legacy_path = root / filename
-        docs_path = ensure_safe_project_path(root, docs_dir / filename)
+                with open_project_file(root_fd, filename, filename) as source_fd:
+                    source = os.fstat(source_fd)
+                    with os.fdopen(source_fd, "r", encoding="utf-8", closefd=False) as handle:
+                        content = handle.read()
+                    _meta, _body, had_fm = parse_frontmatter(content)
+                    if not had_fm:
+                        content, _ = ensure_frontmatter(content, filename, touch=False)
 
-        if legacy_path.exists() and not docs_path.exists():
-            ensure_safe_project_path(root, legacy_path)
-            legacy_path.rename(docs_path)
-            # Prepend frontmatter to migrated file if it lacks it
-            content = read_text(docs_path)
-            _meta, _body, had_fm = parse_frontmatter(content)
-            if not had_fm:
-                updated_text, _ = ensure_frontmatter(
-                    content, filename, touch=False
-                )
-                docs_path.write_text(updated_text, encoding="utf-8")
-            migrated.append(filename)
-        elif legacy_path.exists() and docs_path.exists():
-            left_in_place.append(filename)
+                    # Publish the complete docs copy before removing the source.
+                    write_text_at(
+                        docs_fd, filename, f"docs/{filename}", content,
+                        create=True, metadata_fd=source_fd,
+                    )
+                current = os.stat(filename, dir_fd=root_fd, follow_symlinks=False)
+                if file_version(current) != file_version(source):
+                    raise UnsafeProjectPath(f"Legacy memory file changed during migration: {filename}")
+                os.unlink(filename, dir_fd=root_fd)
+                migrated.append(filename)
 
     return migrated, left_in_place
 
@@ -228,7 +256,7 @@ def ensure_docs_memory_files(root: Path, docs_dir: Path) -> tuple[list[str], lis
             existing.append(filename)
             continue
 
-        path.write_text(template_for(filename), encoding="utf-8")
+        write_project_text(root, path, template_for(filename), create=True)
         created.append(filename)
 
     return created, existing
@@ -237,7 +265,7 @@ def ensure_docs_memory_files(root: Path, docs_dir: Path) -> tuple[list[str], lis
 def ensure_agents_file(root: Path) -> tuple[str, str]:
     agents_path = ensure_safe_project_path(root, Path("AGENTS.md"))
     if not agents_path.exists():
-        agents_path.write_text(template_for("AGENTS.md"), encoding="utf-8")
+        write_project_text(root, agents_path, template_for("AGENTS.md"), create=True)
         return "created", "AGENTS.md"
 
     return ensure_agents_requirement(root, agents_path), "AGENTS.md"
@@ -267,8 +295,27 @@ def print_summary(
     print(f"Unchanged: {show(unchanged)}")
 
 
+def preflight_setup(root: Path) -> None:
+    """Reject known unsafe paths and malformed migrations before any writes."""
+    docs_dir = ensure_safe_project_path(root, DOCS_DIR)
+    agents_path = ensure_safe_project_path(root, Path("AGENTS.md"))
+    with open_project_directory(root, Path(".")) as root_fd:
+        if agents_path.exists():
+            read_text_at(root_fd, "AGENTS.md", "AGENTS.md")
+        if docs_dir.exists() and not docs_dir.is_dir():
+            raise UnsafeProjectPath("Project memory docs/ path is not a directory")
+        for filename in MEMORY_FILES:
+            docs_path = ensure_safe_project_path(root, docs_dir / filename)
+            legacy_path = ensure_safe_project_path(root, Path(filename))
+            if docs_path.exists() and not docs_path.is_file():
+                raise UnsafeProjectPath(f"Project memory path is not a file: docs/{filename}")
+            if memory_location(legacy_path, docs_path) is MemoryLocation.LEGACY_ONLY:
+                parse_frontmatter(read_text_at(root_fd, filename, filename))
+
+
 def main() -> int:
     root = Path.cwd()
+    preflight_setup(root)
     migrated, legacy_left_in_place = migrate_legacy_files(root)
     docs_dir = ensure_safe_project_path(root, DOCS_DIR)
     created, existing = ensure_docs_memory_files(root, docs_dir)

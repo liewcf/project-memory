@@ -2,6 +2,9 @@
 
 Load only the section needed for the chosen mode.
 
+For explicit implementation states, failure boundaries and workflow guards,
+see [state-transitions.md](state-transitions.md).
+
 ## Before Work
 
 Before substantial work, read existing memory before acting:

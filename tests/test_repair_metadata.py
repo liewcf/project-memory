@@ -174,6 +174,20 @@ class RepairMetadataCwdTests(unittest.TestCase):
         self.assertIn("SKIPPED: docs/TASKS.md", result.stdout)
         self.assertEqual(path.read_text(encoding="utf-8"), original)
 
+    def test_ambiguous_frontmatter_is_skipped_without_rewrite(self) -> None:
+        path = Path("docs/TASKS.md")
+        for original in (
+            "---\ntitle: Keep me\n# No closing delimiter\n",
+            "---\ntitle: First\ntitle: Second\n---\nBody\n",
+            "---\ntitle: Keep me\n  - replacement\n---\nBody\n",
+        ):
+            with self.subTest(original=original):
+                path.write_text(original, encoding="utf-8")
+                result = _run_repair()
+                self.assertEqual(result.returncode, 1)
+                self.assertIn("SKIPPED: docs/TASKS.md", result.stdout)
+                self.assertEqual(path.read_text(encoding="utf-8"), original)
+
     def test_repairs_wrong_allowed_doc_type_and_impossible_date(self) -> None:
         path = Path("docs") / "TASKS.md"
         original = (

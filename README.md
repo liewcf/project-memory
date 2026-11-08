@@ -116,6 +116,21 @@ Metadata v1 intentionally supports only scalar `key: value` fields and indented
 unsupported frontmatter lines are rejected. Repair skips unsupported
 frontmatter instead of silently converting or discarding it.
 
+Unterminated frontmatter, repeated keys, list items following a scalar, and
+changing list indentation are rejected without rewriting the affected file.
+Setup checks paths and legacy frontmatter before writing. Migration publishes
+the complete docs copy before removing the root copy; a removal failure leaves
+both copies for manual reconciliation.
+
+Setup and repair stage each complete file before publishing it. Failed staging
+or publication preserves the previous destination. Existing ownership,
+permission bits, ACLs and extended attributes are retained through descriptors
+on macOS and Linux; failure to preserve metadata stops publication. Atomic
+replacement creates a new inode, so hard-linked aliases retain their original
+contents. These are per-file guarantees, not a
+transaction across every file or a lock against concurrent writers. See the
+[state transition reference](project-memory/references/state-transitions.md).
+
 Validate metadata:
 
 ```bash
@@ -141,6 +156,7 @@ project-memory/
   scripts/metadata.py
   scripts/metadata_defaults.py
   scripts/metadata_frontmatter.py
+  scripts/file_metadata.py
   scripts/metadata_repair.py
   scripts/metadata_validation.py
   scripts/path_safety.py
