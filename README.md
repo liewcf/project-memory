@@ -101,6 +101,12 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p "test_*.py"
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s project-memory/tests -p "test_*.py"
 ```
 
+Normal discovery includes the 12 checks in `tests/test_linux_metadata.py` on
+Linux. They use synthetic files and standard-library ACL/xattr APIs, with no
+Docker or extra Python packages required. Other platforms and filesystems
+without the required ACL/xattr support report explicit skips. The group-change
+check also requires a supplementary group different from the effective group.
+
 Check all bundled scripts parse without writing bytecode into the repository:
 
 ```bash
@@ -169,6 +175,7 @@ tests/
   test_metadata.py
   test_validate_metadata.py
   test_repair_metadata.py
+  test_linux_metadata.py
 ```
 
 The root-level `AGENTS.md` is the only root project memory file. `docs/PROJECT_CONTEXT.md`, `docs/DECISIONS.md`, `docs/TASKS.md`, and `docs/CHANGELOG_WORK.md` describe development history for this source package.
