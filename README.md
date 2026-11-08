@@ -125,6 +125,10 @@ frontmatter instead of silently converting or discarding it.
 Quoted scalars support JSON-compatible double-quoted escapes and doubled single
 quotes. Rendering quotes ambiguous scalar and list-item values; repair reparses
 generated metadata and checks the values match before publishing it.
+Whitespace-separated inline comments are recognized outside quoted values.
+Scalar values remain strings, including quoted boolean, numeric, null and date
+spellings. Anchors, aliases, tags, block scalars and unquoted collection or
+mapping syntax are rejected in both fields and list items.
 
 Unterminated frontmatter, repeated keys, list items following a scalar, and
 changing list indentation are rejected without rewriting the affected file.

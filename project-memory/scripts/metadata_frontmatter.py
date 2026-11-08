@@ -76,7 +76,11 @@ def _parse_yaml_block(block: str) -> dict[str, object]:
             )
             current_list = None
             list_indent = None
-            state = _FieldState.EMPTY if raw_value == "" else _FieldState.SCALAR
+            state = (
+                _FieldState.EMPTY
+                if result[current_key] is None
+                else _FieldState.SCALAR
+            )
             continue
 
         _reject_nested_yaml(raw_line, current_key)
@@ -86,14 +90,17 @@ def _parse_yaml_block(block: str) -> dict[str, object]:
 
 
 def _is_ignored_yaml_line(raw_line: str) -> bool:
-    return raw_line.strip() == "" or raw_line.lstrip().startswith("#")
+    return raw_line.strip(" \t") == "" or raw_line.lstrip(" \t").startswith("#")
 
 
 def _parse_list_item(raw_line: str) -> str | None:
     list_match = re.match(r"^[ \t]+- (.+)$", raw_line)
     if not list_match:
         return None
-    return _strip_quotes(list_match.group(1).strip())
+    value = _normalize_scalar_value("list item", list_match.group(1).strip(" \t"))
+    if value is None:
+        raise ValueError("Unsupported empty YAML list item")
+    return value
 
 
 def _append_list_value(
@@ -112,10 +119,19 @@ def _parse_key_value(raw_line: str) -> tuple[str, str] | None:
     kv_match = re.match(r"^(\w[\w-]*)[ \t]*:[ \t]*(.*)$", raw_line)
     if not kv_match:
         return None
-    return kv_match.group(1), kv_match.group(2).strip()
+    return kv_match.group(1), kv_match.group(2).strip(" \t")
 
 
 def _normalize_scalar_value(key: str, raw_value: str) -> str | None:
+    # Only an opening quote starts quoted syntax; quotes within plain scalars
+    # (for example, don't or a"b) are ordinary characters.
+    if raw_value.startswith(('"', "'")):
+        quoted, suffix = _split_quoted_scalar(raw_value)
+        if suffix and not (suffix[0] in " \t" and suffix.lstrip(" \t").startswith("#")):
+            raise ValueError(f"Unsupported trailing YAML syntax for key '{key}'")
+        return _strip_quotes(quoted)
+
+    raw_value = re.split(r"(?:^|[ \t])#", raw_value, maxsplit=1)[0].rstrip(" \t")
     if raw_value.startswith("{") or raw_value.startswith("["):
         raise ValueError(
             f"Unsupported YAML syntax for key '{key}': "
@@ -123,7 +139,33 @@ def _normalize_scalar_value(key: str, raw_value: str) -> str | None:
         )
     if raw_value == "":
         return None
-    return _strip_quotes(raw_value)
+    if (
+        raw_value[0] in "&*!|>%@`]},"
+        or re.match(r"[-?:](?:[ \t]|$)", raw_value)
+        or re.search(r":(?:[ \t]|$)", raw_value)
+        or any(_requires_unicode_escape(char) and char != "\t" for char in raw_value)
+    ):
+        raise ValueError(f"Unsupported YAML scalar syntax for key '{key}'")
+    return raw_value
+
+
+def _split_quoted_scalar(value: str) -> tuple[str, str]:
+    quote = value[0]
+    index = 1
+    while index < len(value):
+        char = value[index]
+        if quote == '"' and char == "\\":
+            index += 2
+            continue
+        if char == quote:
+            if quote == "'" and index + 1 < len(value) and value[index + 1] == "'":
+                index += 2
+                continue
+            return value[: index + 1], value[index + 1 :]
+        if _requires_unicode_escape(char) and char != "\t":
+            raise ValueError("Unsupported raw YAML control or line separator")
+        index += 1
+    raise ValueError("Unterminated quoted YAML scalar")
 
 
 def _reject_nested_yaml(raw_line: str, current_key: str | None) -> None:
@@ -159,9 +201,9 @@ def _render_scalar(value: object) -> str:
         not value
         or value != value.strip()
         or value[0] in "{}[],'\"#&*!|>%@`-?:"
-        or ": " in value
-        or value.endswith(":")
-        or " #" in value
+        or _has_implicit_yaml_type(value)
+        or re.search(r":(?:\s|$)", value)
+        or re.search(r"\s#", value)
         or any(_requires_unicode_escape(char) for char in value)
     ):
         rendered = json.dumps(value, ensure_ascii=False)
@@ -170,6 +212,18 @@ def _render_scalar(value: object) -> str:
             for char in rendered
         )
     return value
+
+
+def _has_implicit_yaml_type(value: str) -> bool:
+    # Metadata scalar values are strings. Cover YAML 1.1 and 1.2 resolvers,
+    # including dates and implementation-specific numeric spellings, without
+    # needing a YAML dependency or an exhaustive numeric grammar.
+    return (
+        value.lower() in {"null", "~", "true", "false", "yes", "no", "on", "off", "y", "n"}
+        or value[0] in "+0123456789"
+        or value.lower() in {".inf", ".nan"}
+        or re.match(r"\.\d", value) is not None
+    )
 
 
 def _requires_unicode_escape(char: str) -> bool:

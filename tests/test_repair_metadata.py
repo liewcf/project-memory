@@ -15,6 +15,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS_DIR = ROOT / "project-memory" / "scripts"
 REPAIR_SCRIPT = SCRIPTS_DIR / "repair_metadata.py"
 VALIDATE_SCRIPT = SCRIPTS_DIR / "validate_metadata.py"
+sys.path.insert(0, str(SCRIPTS_DIR))
+from metadata_frontmatter import parse_frontmatter
 
 
 def _run_repair(
@@ -118,7 +120,7 @@ class RepairMetadataCwdTests(unittest.TestCase):
         result2 = _run_repair("--touch")
         self.assertEqual(result2.returncode, 0)
         content2 = (Path("docs") / "TASKS.md").read_text(encoding="utf-8")
-        self.assertIn(f"updated: {date.today().isoformat()}", content2)
+        self.assertEqual(parse_frontmatter(content2)[0]["updated"], date.today().isoformat())
 
     def test_updated_preserved_without_touch(self) -> None:
         today = date.today().isoformat()
@@ -214,7 +216,7 @@ class RepairMetadataCwdTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0)
         self.assertIn("doc_type: task_state", repaired)
-        self.assertIn(f"created: {date.today().isoformat()}", repaired)
+        self.assertEqual(parse_frontmatter(repaired)[0]["created"], date.today().isoformat())
         self.assertIn("# Tasks", repaired)
 
     def test_stable_field_order(self) -> None:
