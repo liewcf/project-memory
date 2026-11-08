@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum, auto
+import json
 import re
 
 from metadata_defaults import REQUIRED_FIELDS
@@ -134,9 +135,50 @@ def _strip_quotes(value: str) -> str:
     if len(value) >= 2:
         double_quoted = value[0] == '"' and value[-1] == '"'
         single_quoted = value[0] == "'" and value[-1] == "'"
-        if double_quoted or single_quoted:
-            return value[1:-1]
+        if double_quoted:
+            try:
+                decoded = json.loads(value)
+            except (ValueError, TypeError) as exc:
+                raise ValueError("Unsupported double-quoted YAML scalar") from exc
+            if any(0xD800 <= ord(char) <= 0xDFFF for char in decoded):
+                raise ValueError("Unsupported unpaired Unicode surrogate")
+            return decoded
+        if single_quoted:
+            inner = value[1:-1]
+            if re.fullmatch(r"(?:[^']|'')*", inner) is None:
+                raise ValueError("Unsupported single-quoted YAML scalar")
+            return inner.replace("''", "'")
     return value
+
+
+def _render_scalar(value: object) -> str:
+    value = str(value)
+    if any(0xD800 <= ord(char) <= 0xDFFF for char in value):
+        raise ValueError("Unsupported unpaired Unicode surrogate")
+    if (
+        not value
+        or value != value.strip()
+        or value[0] in "{}[],'\"#&*!|>%@`-?:"
+        or ": " in value
+        or value.endswith(":")
+        or " #" in value
+        or any(_requires_unicode_escape(char) for char in value)
+    ):
+        rendered = json.dumps(value, ensure_ascii=False)
+        return "".join(
+            f"\\u{ord(char):04x}" if _requires_unicode_escape(char) else char
+            for char in rendered
+        )
+    return value
+
+
+def _requires_unicode_escape(char: str) -> bool:
+    codepoint = ord(char)
+    return (
+        codepoint < 32
+        or 0x7F <= codepoint <= 0x9F
+        or codepoint in (0x2028, 0x2029, 0xFFFE, 0xFFFF)
+    )
 
 
 def render_frontmatter(data: dict[str, object]) -> str:
@@ -157,8 +199,8 @@ def _render_field(lines: list[str], key: str, value: object) -> None:
     if isinstance(value, list):
         lines.append(f"{key}:")
         for item in value:
-            lines.append(f"  - {item}")
+            lines.append(f"  - {_render_scalar(item)}")
     elif value is None:
         lines.append(f"{key}:")
     else:
-        lines.append(f"{key}: {value}")
+        lines.append(f"{key}: {_render_scalar(value)}")

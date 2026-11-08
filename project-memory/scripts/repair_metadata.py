@@ -4,7 +4,7 @@
 Run from the target project root, or pass ``--root PATH``.
 Use ``--touch`` to bump the ``updated`` date even when nothing else changes.
 
-Exits 0 on success, 1 if any file could not be repaired.
+Exits 0 on complete success, 1 if repair or temporary-file cleanup failed.
 """
 
 from __future__ import annotations
@@ -24,6 +24,7 @@ from metadata import (
     resolve_root,
 )
 from path_safety import (
+    PublishedCleanupError,
     UnsafeProjectPath,
     open_project_directory,
     read_text_at,
@@ -74,6 +75,9 @@ def main() -> int:
                         create=True,
                     )
                     print(f"Created metadata: {rel}")
+                except PublishedCleanupError as exc:
+                    print(f"PUBLISHED: {rel} (temporary-file cleanup failed: {exc.cleanup_error}; retained name: {exc.temporary_name})")
+                    had_error = True
                 except (OSError, UnsafeProjectPath) as exc:
                     print(f"SKIPPED: {rel} (cannot write: {exc})")
                     had_error = True
@@ -104,6 +108,10 @@ def main() -> int:
                     updated_text,
                     create=False,
                 )
+            except PublishedCleanupError as exc:
+                print(f"PUBLISHED: {rel} (temporary-file cleanup failed: {exc.cleanup_error}; retained name: {exc.temporary_name})")
+                had_error = True
+                continue
             except (OSError, UnsafeProjectPath) as exc:
                 print(f"SKIPPED: {rel} (cannot write: {exc})")
                 had_error = True

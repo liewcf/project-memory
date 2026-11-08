@@ -19,19 +19,28 @@ start actions, grant authorization or introduce a project-management system.
 | `_FieldState.SCALAR` | Next key → `EMPTY` or `SCALAR` | A list item cannot overwrite a scalar. |
 | `_FieldState.LIST` | Same-indentation item → append; next key → `EMPTY` or `SCALAR` | Changed indentation is unsupported nesting. Comments and blank lines preserve the current state. Duplicate keys are invalid in every state. |
 | Metadata repair | Unchanged → changed when any field needs repair | `changed` is monotonic during one call. Preserve valid values; repair invalid defaults. Refresh `updated` for any repair, or for explicit `--touch` when its date differs from today. |
-| Frontmatter result | Absent → `added`; existing with changes → `updated`; existing without changes → `unchanged` | Return original text exactly for `unchanged`; parsing errors produce no replacement text. |
-| Repair command | Read → create missing / skip unchanged / publish repaired / skip error | A handled error sets `had_error` permanently for this run. Continue other files and exit 1 if any handled error occurred. |
+| Frontmatter result | Absent → `added`; existing with changes → `updated`; existing without changes → `unchanged` | Return original text exactly for `unchanged`. Before returning changed text, reparse generated metadata and check it matches the intended values; a mismatch produces no replacement text. |
+| Repair command | Read → create missing / skip unchanged / publish repaired / skip error / report published cleanup warning | A handled error or cleanup warning sets `had_error` permanently for this run. Continue other files and exit 1 if any occurred. `PUBLISHED` means the file was saved despite the nonzero exit. |
 | Validation | Read → parse → required fields → semantic checks → pass/fail | Missing required fields stop deeper metadata checks. `any_fail` is monotonic across files and determines the exit code. Validation does not write. |
 | File access | Required primitives → safe directory descriptor → no-follow file open → regular-file check → read or stage → close | Unsupported runtime primitives and unsafe paths fail closed. |
 | File publication | Stage → preserve metadata → flush/sync → publish → remove temporary name | Creation uses an exclusive hard link; replacement uses atomic rename. Preserve ownership, permission bits, ACLs and extended attributes before publication; fail if preservation is unavailable. Before replacement, reject detected changes to the existing target. Failed staging/publication leaves the destination intact. |
+| `_PublicationState` | `STAGED` → `PUBLISHED_WITH_TEMP` after link, or `PUBLISHED` after rename | Rename consumes the temporary name. For a linked destination, cleanup failure raises `PublishedCleanupError` with the saved destination and retained temporary name. This is distinct from a failed publication. |
 
 Publication replaces a directory entry, not the old inode. Hard-linked aliases
 keep their old contents. Metadata preservation uses Darwin's descriptor-based
-`fcopyfile` or Linux's descriptor-based xattr APIs; other runtimes fail closed
+ACL get/set APIs and `fcopyfile` for xattrs, or Linux's descriptor-based xattr
+APIs. Darwin replaces ACLs exactly, including clearing inherited entries when
+the source has no ACL; other runtimes fail closed
 when copying an existing file. A process crash may leave a temporary file or two migration
 copies; setup does not automatically remove such recovery material. No command
 provides a transaction across all files, interprocess locking or a full
 power-loss durability guarantee.
+
+If publication succeeds but temporary-file cleanup fails, setup stops with an
+explicit publication warning and a nonzero exit; migration leaves its legacy
+source in place. Repair reports `PUBLISHED` with a warning, continues other
+files and exits nonzero. Inspect the saved destination and retained temporary
+name rather than assuming the file was skipped.
 
 ## Workflow States
 

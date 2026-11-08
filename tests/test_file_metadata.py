@@ -60,5 +60,57 @@ class MetadataPreservationTests(unittest.TestCase):
         self.assertEqual(self.metadata(destination), self.original_metadata)
 
 
+@unittest.skipUnless(sys.platform == "darwin", "requires native Darwin ACLs")
+class DarwinAclReplacementTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        subprocess.run(["chmod", "-N", str(self.root)], check=True)
+        self.source = self.root / "TASKS.md"
+        self.source.write_text("# Private synthetic body\n", encoding="utf-8")
+        self.source.chmod(0o600)
+        self.assertEqual(self.acl(self.source), [])
+
+    def acl(self, path: Path) -> list[str]:
+        result = subprocess.run(["ls", "-le", str(path)], check=True, capture_output=True, text=True)
+        return result.stdout.splitlines()[1:]
+
+    def inherit_read_acl(self, directory: Path) -> None:
+        subprocess.run(
+            ["chmod", "+a", "everyone allow read,file_inherit,directory_inherit", str(directory)],
+            check=True,
+        )
+
+    def test_replacement_clears_inherited_acl_when_source_has_none(self) -> None:
+        self.inherit_read_acl(self.root)
+        with path_safety.open_project_directory(self.root, Path(".")) as directory_fd:
+            path_safety.write_text_at(directory_fd, "TASKS.md", "TASKS.md", "replacement", create=False)
+        self.assertEqual(self.source.read_text(encoding="utf-8"), "replacement")
+        self.assertEqual(self.source.stat().st_mode & 0o777, 0o600)
+        self.assertEqual(self.acl(self.source), [])
+
+    def test_migration_clears_inherited_acl_when_source_has_none(self) -> None:
+        docs = self.root / "docs"
+        docs.mkdir()
+        self.inherit_read_acl(docs)
+        migrated, conflicts = setup_project_memory.migrate_legacy_files(self.root)
+        self.assertEqual(migrated, ["TASKS.md"])
+        self.assertEqual(conflicts, [])
+        self.assertFalse(self.source.exists())
+        destination = docs / "TASKS.md"
+        self.assertIn("# Private synthetic body", destination.read_text(encoding="utf-8"))
+        self.assertEqual(destination.stat().st_mode & 0o777, 0o600)
+        self.assertEqual(self.acl(destination), [])
+
+    def test_existing_acl_is_copied_without_extra_inherited_entries(self) -> None:
+        subprocess.run(["chmod", "+a", "user:daemon deny read", str(self.source)], check=True)
+        expected = self.acl(self.source)
+        self.inherit_read_acl(self.root)
+        with path_safety.open_project_directory(self.root, Path(".")) as directory_fd:
+            path_safety.write_text_at(directory_fd, "TASKS.md", "TASKS.md", "replacement", create=False)
+        self.assertEqual(self.acl(self.source), expected)
+
+
 if __name__ == "__main__":
     unittest.main()

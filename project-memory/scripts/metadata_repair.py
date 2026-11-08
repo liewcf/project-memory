@@ -119,5 +119,12 @@ def ensure_frontmatter(
             new_text += "\n"
         new_text += body
 
+    try:
+        generated, _, had_generated = parse_frontmatter(new_text)
+    except ValueError as exc:
+        raise ValueError("Generated metadata could not be parsed") from exc
+    if not had_generated or generated != repaired:
+        raise ValueError("Generated metadata does not match repaired metadata")
+
     status = "updated" if had_fm else "added"
     return new_text, status

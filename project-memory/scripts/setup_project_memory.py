@@ -23,6 +23,7 @@ from metadata import (
     render_frontmatter,
 )
 from path_safety import (
+    PublishedCleanupError,
     UnsafeProjectPath,
     ensure_safe_project_path,
     file_version,
@@ -316,13 +317,16 @@ def preflight_setup(root: Path) -> None:
 def main() -> int:
     root = Path.cwd()
     preflight_setup(root)
-    migrated, legacy_left_in_place = migrate_legacy_files(root)
-    docs_dir = ensure_safe_project_path(root, DOCS_DIR)
-    created, existing = ensure_docs_memory_files(root, docs_dir)
+    try:
+        migrated, legacy_left_in_place = migrate_legacy_files(root)
+        docs_dir = ensure_safe_project_path(root, DOCS_DIR)
+        created, existing = ensure_docs_memory_files(root, docs_dir)
+        agents_status, agents_name = ensure_agents_file(root)
+    except PublishedCleanupError as exc:
+        print(f"WARNING: {exc}")
+        return 1
     updated: list[str] = []
     unchanged: list[str] = []
-
-    agents_status, agents_name = ensure_agents_file(root)
     if agents_status == "created":
         created.append(agents_name)
     elif agents_status == "updated":

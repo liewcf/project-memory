@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ctypes
+import errno
 import os
 import stat
 import sys
@@ -11,9 +12,9 @@ import sys
 def copy_file_metadata(source_fd: int, destination_fd: int) -> None:
     """Copy security metadata, or fail before the destination is published.
 
-    Darwin stores ACLs outside Python's POSIX interfaces. Its fcopyfile(3)
-    accepts already-open descriptors; COPYFILE_ACL | COPYFILE_XATTR leaves
-    file contents and modification time alone. Linux exposes ACLs as xattrs.
+    Darwin ACLs are replaced exactly through descriptor-based ACL APIs;
+    fcopyfile(3) copies xattrs without changing data or modification time.
+    Linux exposes ACLs as xattrs.
     """
     if sys.platform not in {"darwin", "linux"}:
         raise OSError("descriptor-safe metadata preservation is unavailable")
@@ -31,16 +32,47 @@ def copy_file_metadata(source_fd: int, destination_fd: int) -> None:
 
 def _copy_darwin_metadata(source_fd: int, destination_fd: int) -> None:
     try:
-        fcopyfile = ctypes.CDLL(None, use_errno=True).fcopyfile
+        library = ctypes.CDLL(None, use_errno=True)
+        fcopyfile = library.fcopyfile
+        get_acl = library.acl_get_fd_np
+        init_acl = library.acl_init
+        set_acl = library.acl_set_fd_np
+        free_acl = library.acl_free
     except (OSError, AttributeError) as exc:
         raise OSError("descriptor-safe metadata preservation is unavailable") from exc
     fcopyfile.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_uint32]
     fcopyfile.restype = ctypes.c_int
-    copyfile_acl = 1 << 0
-    copyfile_xattr = 1 << 2
-    if fcopyfile(source_fd, destination_fd, None, copyfile_acl | copyfile_xattr) != 0:
-        error = ctypes.get_errno()
-        raise OSError(error, os.strerror(error))
+    get_acl.argtypes = [ctypes.c_int, ctypes.c_int]
+    get_acl.restype = ctypes.c_void_p
+    init_acl.argtypes = [ctypes.c_int]
+    init_acl.restype = ctypes.c_void_p
+    set_acl.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_int]
+    set_acl.restype = ctypes.c_int
+    free_acl.argtypes = [ctypes.c_void_p]
+    free_acl.restype = ctypes.c_int
+
+    acl_type_extended = 0x100  # Darwin sys/acl.h.
+    source_acl = get_acl(source_fd, acl_type_extended)
+    if not source_acl:
+        if ctypes.get_errno() != errno.ENOENT:
+            _raise_native_error()
+        # No source ACL must clear any ACL inherited by the staging file.
+        source_acl = init_acl(0)
+        if not source_acl:
+            _raise_native_error()
+    try:
+        if set_acl(destination_fd, source_acl, acl_type_extended) != 0:
+            _raise_native_error()
+        copyfile_xattr = 1 << 2
+        if fcopyfile(source_fd, destination_fd, None, copyfile_xattr) != 0:
+            _raise_native_error()
+    finally:
+        free_acl(source_acl)
+
+
+def _raise_native_error() -> None:
+    error = ctypes.get_errno() or errno.EIO
+    raise OSError(error, os.strerror(error))
 
 
 def _copy_linux_metadata(source_fd: int, destination_fd: int) -> None:

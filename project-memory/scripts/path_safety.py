@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from contextlib import ExitStack, contextmanager
+from enum import Enum, auto
 import errno
 import os
 from pathlib import Path
@@ -19,6 +20,29 @@ _NOFOLLOW_OPERATIONS = (os.stat, os.link)
 
 class UnsafeProjectPath(RuntimeError):
     """Raised when a project-memory path cannot be opened safely."""
+
+
+class PublishedCleanupError(OSError):
+    """The destination was saved, but its temporary hard link remains."""
+
+    def __init__(self, relative_path: str, temporary_name: str, cleanup_error: OSError):
+        self.relative_path = relative_path
+        self.temporary_name = temporary_name
+        self.cleanup_error = cleanup_error
+        message = (
+            f"Published {relative_path}; temporary-file cleanup failed for "
+            f"{temporary_name}: {cleanup_error}"
+        )
+        if cleanup_error.errno is None:
+            super().__init__(message)
+        else:
+            super().__init__(cleanup_error.errno, message)
+
+
+class _PublicationState(Enum):
+    STAGED = auto()
+    PUBLISHED_WITH_TEMP = auto()
+    PUBLISHED = auto()
 
 
 def ensure_safe_project_path(root: Path, path: Path) -> Path:
@@ -157,6 +181,7 @@ def _stage_and_publish(
         temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
         0o666, dir_fd=directory_fd,
     )
+    state = _PublicationState.STAGED
 
     try:
         try:
@@ -188,6 +213,7 @@ def _stage_and_publish(
                 raise UnsafeProjectPath(
                     f"Refusing to replace unexpected project memory path: {relative_path}"
                 ) from exc
+            state = _PublicationState.PUBLISHED_WITH_TEMP
         else:
             with open_project_file(directory_fd, filename, relative_path, writable=True) as current_fd:
                 current = os.fstat(current_fd)
@@ -195,11 +221,17 @@ def _stage_and_publish(
             if file_version(current) != file_version(previous):
                 raise UnsafeProjectPath(f"Project memory file changed during write: {relative_path}")
             os.rename(temporary, filename, src_dir_fd=directory_fd, dst_dir_fd=directory_fd)
+            state = _PublicationState.PUBLISHED
     finally:
-        try:
-            os.unlink(temporary, dir_fd=directory_fd)
-        except FileNotFoundError:
-            pass
+        if state is not _PublicationState.PUBLISHED:
+            try:
+                os.unlink(temporary, dir_fd=directory_fd)
+            except FileNotFoundError:
+                pass
+            except OSError as exc:
+                if state is _PublicationState.PUBLISHED_WITH_TEMP:
+                    raise PublishedCleanupError(relative_path, temporary, exc) from exc
+                raise
 
 
 def write_project_text(root: Path, path: Path, text: str, *, create: bool) -> None:

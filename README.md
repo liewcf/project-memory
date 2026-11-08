@@ -122,6 +122,10 @@ Metadata v1 intentionally supports only scalar `key: value` fields and indented
 unsupported frontmatter lines are rejected. Repair skips unsupported
 frontmatter instead of silently converting or discarding it.
 
+Quoted scalars support JSON-compatible double-quoted escapes and doubled single
+quotes. Rendering quotes ambiguous scalar and list-item values; repair reparses
+generated metadata and checks the values match before publishing it.
+
 Unterminated frontmatter, repeated keys, list items following a scalar, and
 changing list indentation are rejected without rewriting the affected file.
 Setup checks paths and legacy frontmatter before writing. Migration publishes
@@ -136,6 +140,16 @@ replacement creates a new inode, so hard-linked aliases retain their original
 contents. These are per-file guarantees, not a
 transaction across every file or a lock against concurrent writers. See the
 [state transition reference](project-memory/references/state-transitions.md).
+
+On macOS, copying metadata replaces the staging file's ACL exactly, clearing
+inherited entries that are absent from the source. A source with no ACL remains
+without one after replacement or migration.
+
+If a file is published but its temporary hard link cannot be removed, repair
+reports `PUBLISHED` with a cleanup warning and the retained temporary name;
+setup also reports that publication occurred. Both return a nonzero exit status.
+The destination is already saved. A migration keeps its legacy source in this
+case, leaving both copies available for reconciliation.
 
 Validate metadata:
 
