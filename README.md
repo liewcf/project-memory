@@ -121,6 +121,8 @@ Metadata v1 intentionally supports only scalar `key: value` fields and indented
 `- item` lists. Flow mappings, flow sequences, nested YAML, and other
 unsupported frontmatter lines are rejected. Repair skips unsupported
 frontmatter instead of silently converting or discarding it.
+Repair and validation report unreadable UTF-8 per file, continue with the other
+files, and return a nonzero exit status. Repair preserves the unreadable bytes.
 Mapping colons require whitespace before a value; bare `key:` fields remain
 supported. Lines such as `title:Roadmap` are rejected.
 

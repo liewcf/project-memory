@@ -82,7 +82,7 @@ def main() -> int:
                     print(f"SKIPPED: {rel} (cannot write: {exc})")
                     had_error = True
                 continue
-            except (OSError, UnsafeProjectPath) as exc:
+            except (OSError, UnicodeError, UnsafeProjectPath) as exc:
                 print(f"SKIPPED: {rel} (cannot read: {exc})")
                 had_error = True
                 continue

@@ -45,7 +45,7 @@ def main() -> int:
 
         try:
             text = path.read_text(encoding="utf-8")
-        except OSError as exc:
+        except (OSError, UnicodeError) as exc:
             print(f"ERROR: {rel}")
             print(f"- Cannot read file: {exc}")
             any_fail = True

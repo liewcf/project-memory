@@ -77,6 +77,24 @@ class ValidateMetadataCwdTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertIn("Metadata validation passed.", result.stdout)
 
+    def test_reports_invalid_utf8_and_validates_later_files(self) -> None:
+        docs = Path("docs")
+        _write_valid_docs(docs)
+        (docs / "PROJECT_CONTEXT.md").write_bytes(b"\xff\xfe# Invalid UTF-8 fixture\n")
+        before = {path.name: path.read_bytes() for path in docs.iterdir()}
+
+        result = _run_validate()
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("ERROR: docs/PROJECT_CONTEXT.md", result.stdout)
+        self.assertIn("Cannot read file:", result.stdout)
+        self.assertEqual(result.stderr, "")
+        for filename in ("DECISIONS.md", "TASKS.md", "CHANGELOG_WORK.md"):
+            self.assertIn(f"OK: docs/{filename}", result.stdout)
+        self.assertIn("Metadata validation failed.", result.stdout)
+        self.assertNotIn("Metadata validation passed.", result.stdout)
+        self.assertEqual({path.name: path.read_bytes() for path in docs.iterdir()}, before)
+
     def test_missing_file_fails(self) -> None:
         result = _run_validate()
         self.assertNotEqual(result.returncode, 0)

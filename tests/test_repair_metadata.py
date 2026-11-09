@@ -67,6 +67,26 @@ class RepairMetadataCwdTests(unittest.TestCase):
                 content = path.read_text(encoding="utf-8")
                 self.assertTrue(content.startswith("---\n"))
 
+    def test_skips_invalid_utf8_and_repairs_later_files(self) -> None:
+        path = Path("docs") / "PROJECT_CONTEXT.md"
+        original = b"\xff\xfe# Invalid UTF-8 fixture\n"
+        path.write_bytes(original)
+
+        result = _run_repair()
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("SKIPPED: docs/PROJECT_CONTEXT.md (cannot read:", result.stdout)
+        self.assertEqual(result.stderr, "")
+        self.assertEqual(path.read_bytes(), original)
+        for filename in ("DECISIONS.md", "TASKS.md", "CHANGELOG_WORK.md"):
+            self.assertIn(f"Created metadata: docs/{filename}", result.stdout)
+            self.assertTrue((Path("docs") / filename).read_text(encoding="utf-8").startswith("---\n"))
+        self.assertEqual(list(Path("docs").glob(".*.tmp")), [])
+
+        path.write_text("# Recovered context\n", encoding="utf-8")
+        self.assertEqual(_run_repair().returncode, 0)
+        self.assertEqual(_run_validate().returncode, 0)
+
     def test_adds_frontmatter_to_plain_markdown(self) -> None:
         (Path("docs") / "TASKS.md").write_text(
             "# Tasks\n\n- Item 1\n", encoding="utf-8"
